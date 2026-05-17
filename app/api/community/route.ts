@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { execFile } from "child_process";
-import { promisify } from "util";
+import Anthropic from "@anthropic-ai/sdk";
 
 export const dynamic = "force-dynamic";
-
-const execFileAsync = promisify(execFile);
 
 export interface ChatMessage {
   id: string;
@@ -335,13 +332,21 @@ export async function POST(request: NextRequest) {
   if (callsTJ) {
     Promise.resolve().then(async () => {
       try {
-        const { stdout } = await execFileAsync(
-          "powershell",
-          ["-NoProfile", "-NonInteractive", "-Command", "& claude -p $env:TJ_PROMPT --system-prompt $env:TJ_SYSTEM"],
-          { timeout: 22_000, maxBuffer: 256 * 1024, env: { ...process.env, TJ_PROMPT: text.slice(0, 800), TJ_SYSTEM } }
-        );
-        const reply = stdout.trim();
+        const apiKey = process.env.ANTHROPIC_API_KEY;
+        if (!apiKey) { addTJ(getTJFallback(text)); return; }
+        const client = new Anthropic({ apiKey });
+        const response = await client.messages.create({
+          model: "claude-haiku-4-5-20251001",
+          max_tokens: 512,
+          system: TJ_SYSTEM,
+          messages: [{ role: "user", content: text.slice(0, 800) }],
+        });
+        const reply = response.content
+          .filter((b) => b.type === "text")
+          .map((b) => (b as { type: "text"; text: string }).text)
+          .join("").trim();
         if (reply) addTJ(reply);
+        else addTJ(getTJFallback(text));
       } catch {
         addTJ(getTJFallback(text));
       }
