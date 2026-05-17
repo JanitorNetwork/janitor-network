@@ -575,7 +575,7 @@ export default function HomePage() {
                 href="https://github.com/JanitorNetwork/janitor-network"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="btn-ghost"
+                className="btn-primary"
               >
                 GitHub <ExternalLink size={14} />
               </a>
