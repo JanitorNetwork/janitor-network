@@ -4,25 +4,26 @@ import { useState, useRef, useEffect } from "react";
 import { Music, Play, Pause, SkipForward, Volume2, VolumeX } from "lucide-react";
 
 const STATIONS = [
-  { name: "Lo-fi Hip Hop",   vibe: "Beats to study & relax",  url: "https://stream.laut.fm/lofi" },
-  { name: "Chillhop Radio",  vibe: "Relaxed grooves 24/7",    url: "https://streams.ilovemusic.de/iloveradio17.mp3" },
-  { name: "Chill Lounge",    vibe: "Smooth ambient tones",    url: "https://stream.laut.fm/chillout" },
+  { name: "Lo-fi Plaza",    vibe: "Beats to study & relax",  url: "https://radio.plaza.one/ogg" },
+  { name: "Chillhop Radio", vibe: "Relaxed grooves 24/7",    url: "https://streams.ilovemusic.de/iloveradio17.mp3" },
+  { name: "Lo-fi Hip Hop",  vibe: "Smooth ambient tones",    url: "https://stream.laut.fm/lofi" },
 ];
 
 export default function LofiPlayer() {
-  const [playing, setPlaying]     = useState(false);
-  const [loading, setLoading]     = useState(false);
-  const [muted, setMuted]         = useState(false);
+  const [playing, setPlaying]       = useState(false);
+  const [loading, setLoading]       = useState(false);
+  const [muted, setMuted]           = useState(false);
   const [stationIdx, setStationIdx] = useState(0);
-  const [started, setStarted]     = useState(false);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const stationRef = useRef(stationIdx);
-  stationRef.current = stationIdx;
+  const [started, setStarted]       = useState(false);
+  const audioRef   = useRef<HTMLAudioElement | null>(null);
+  const startedRef = useRef(false);
+  startedRef.current = started;
 
   useEffect(() => {
     const el = new Audio();
     el.volume = 0.28;
     el.src = STATIONS[0].url;
+    el.preload = "none";
     el.addEventListener("play",    () => { setPlaying(true);  setLoading(false); });
     el.addEventListener("pause",   () => setPlaying(false));
     el.addEventListener("waiting", () => setLoading(true));
@@ -36,9 +37,12 @@ export default function LofiPlayer() {
     return () => { el.pause(); el.src = ""; audioRef.current = null; };
   }, []);
 
+  // Only reload audio when station changes AFTER the user has started playback.
+  // Do NOT include 'started' in deps — triggering this effect when 'started'
+  // first becomes true would immediately pause the audio the user just started.
   useEffect(() => {
     const el = audioRef.current;
-    if (!el || !started) return;
+    if (!el || !startedRef.current) return;
     const wasPlaying = !el.paused;
     el.pause();
     el.src = STATIONS[stationIdx].url;
@@ -47,7 +51,7 @@ export default function LofiPlayer() {
       setLoading(true);
       el.play().catch(() => setLoading(false));
     }
-  }, [stationIdx, started]);
+  }, [stationIdx]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (audioRef.current) audioRef.current.muted = muted;
@@ -59,7 +63,11 @@ export default function LofiPlayer() {
     if (!el.paused) {
       el.pause();
     } else {
-      setStarted(true);
+      if (!startedRef.current) {
+        setStarted(true);
+        el.src = STATIONS[stationIdx].url;
+        el.load();
+      }
       setLoading(true);
       el.play().catch(() => setLoading(false));
     }

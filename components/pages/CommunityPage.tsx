@@ -97,6 +97,7 @@ export default function CommunityPage() {
           muted
           playsInline
           className="absolute inset-0 w-full h-full object-cover"
+          style={{ filter: "brightness(1.35) contrast(1.05) saturate(1.1)", willChange: "auto" }}
         />
         {/* Gradient overlays */}
         <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(6,6,6,0.3) 0%, rgba(6,6,6,0.1) 40%, rgba(6,6,6,0.65) 100%)" }} />

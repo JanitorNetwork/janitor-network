@@ -19,10 +19,11 @@ function safeErr(e: unknown): string {
 }
 
 // ── EVM chain config ──────────────────────────────────────────────────────────
-// Ethereum: Etherscan V2 (single key, chainid=1). V1 deprecated as of 2025.
-// Base: Blockscout Etherscan-compatible API (keyless, same module/action format).
-//   Etherscan V2 free plan does not cover Base (chainid=8453) — paid plan required.
-//   Blockscout provides identical endpoint coverage for Base at no cost.
+// Ethereum: Etherscan V2 (api.etherscan.io/v2/api, chainid=1, ETHERSCAN_API_KEY).
+// Base: Blockscout Etherscan-compatible API (base.blockscout.com/api, keyless).
+//   Etherscan V2 free plan blocks chainid=8453 (paid only).
+//   Basescan V1 (api.basescan.org/api) is also deprecated.
+//   Blockscout provides identical module/action coverage for Base at no cost.
 const EVM_CHAIN = {
   ethereum: {
     api:     "https://api.etherscan.io/v2/api",
@@ -32,11 +33,11 @@ const EVM_CHAIN = {
     key:     () => process.env.ETHERSCAN_API_KEY ?? "",
   },
   base: {
-    api:     "https://base.blockscout.com/api",    // Etherscan-compatible, keyless
+    api:     "https://base.blockscout.com/api",     // Etherscan-compatible, keyless
     chainId: "",                                    // Not used — Blockscout URL is chain-specific
     apiV2:   "https://base.blockscout.com/api/v2",
     label:   "Base",
-    key:     () => "",                             // Blockscout requires no API key
+    key:     () => "",                              // Blockscout requires no API key
   },
 } as const;
 

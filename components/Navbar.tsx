@@ -7,15 +7,16 @@ import { Menu, X, ArrowRight } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import JanitorLogo from "@/components/JanitorLogo";
 
-const NAV_LINKS = [
-  { href: "/",          label: "Home" },
-  { href: "/scan",      label: "Trash Scanner" },
-  { href: "/clean",     label: "$CLEAN" },
-  { href: "/roadmap",   label: "Roadmap" },
-  { href: "/gallery",   label: "Gallery" },
-  { href: "/comics",    label: "Comics" },
-  { href: "/community", label: "Community" },
-  { href: "/about",     label: "About" },
+const NAV_LINKS: { href: string; label: string; hot?: boolean }[] = [
+  { href: "/",               label: "Home" },
+  { href: "/scan",           label: "Trash Scanner" },
+  { href: "/clean",          label: "$CLEAN" },
+  { href: "/announcements",  label: "Announcements", hot: true },
+  { href: "/roadmap",        label: "Roadmap" },
+  { href: "/gallery",        label: "Gallery" },
+  { href: "/comics",         label: "Comics" },
+  { href: "/community",      label: "Community" },
+  { href: "/about",          label: "About" },
 ];
 
 const SOCIAL = [
@@ -129,12 +130,15 @@ export default function Navbar() {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className="relative px-3 py-2 text-[11px] font-semibold tracking-[0.12em] uppercase transition-all duration-200 whitespace-nowrap flex-shrink-0"
+                  className="relative px-3 py-2 text-[11px] font-semibold tracking-[0.12em] uppercase transition-all duration-200 whitespace-nowrap flex-shrink-0 flex items-center gap-1.5"
                   style={{ color: active ? "var(--green)" : "var(--text-silver)" }}
                   onMouseEnter={e => { if (!active) (e.currentTarget as HTMLElement).style.color = "var(--text-cream)"; }}
                   onMouseLeave={e => { if (!active) (e.currentTarget as HTMLElement).style.color = "var(--text-silver)"; }}
                 >
                   {link.label}
+                  {link.hot && !active && (
+                    <span className="w-1.5 h-1.5 rounded-full animate-pulse-green flex-shrink-0" style={{ background: "var(--green)" }} />
+                  )}
                   {active && (
                     <span
                       className="absolute bottom-0 left-3 right-3 h-px"
@@ -288,8 +292,11 @@ export default function Navbar() {
                           background: active ? "rgba(57,255,20,0.04)" : "transparent",
                         }}
                       >
-                        <span className="flex-1 text-xs font-semibold tracking-[0.15em] uppercase">
+                        <span className="flex-1 text-xs font-semibold tracking-[0.15em] uppercase flex items-center gap-2">
                           {link.label}
+                          {link.hot && !active && (
+                            <span className="w-1.5 h-1.5 rounded-full animate-pulse-green flex-shrink-0" style={{ background: "var(--green)" }} />
+                          )}
                         </span>
                         {active && <ArrowRight size={12} style={{ color: "var(--green)" }} />}
                       </Link>

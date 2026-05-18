@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import { ArrowRight, Search, Shield, MessageSquare } from "lucide-react";
+import JanitorLogo from "@/components/JanitorLogo";
 
 const STORAGE_KEY = "janitor_welcomed_v1";
 
@@ -86,7 +87,7 @@ export default function WelcomeOverlay() {
           />
 
           {/* Content */}
-          <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 py-12">
+          <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 py-12 overflow-y-auto">
 
             {/* Step 0 — Welcome */}
             <AnimatePresence mode="wait">
@@ -100,22 +101,8 @@ export default function WelcomeOverlay() {
                   className="text-center max-w-lg"
                 >
                   {/* Logo mark */}
-                  <div className="flex justify-center mb-8">
-                    <div
-                      className="w-20 h-20 border-2 flex items-center justify-center animate-float"
-                      style={{
-                        borderColor: "var(--green)",
-                        boxShadow: "0 0 40px rgba(57,255,20,0.2), 0 0 80px rgba(57,255,20,0.08)",
-                        background: "var(--green-trace)",
-                      }}
-                    >
-                      <span
-                        className="font-black text-3xl"
-                        style={{ color: "var(--green)", fontFamily: "monospace" }}
-                      >
-                        J
-                      </span>
-                    </div>
+                  <div className="flex justify-center mb-8 animate-float">
+                    <JanitorLogo size={96} glow />
                   </div>
 
                   <div className="flex items-center justify-center gap-2 mb-5">

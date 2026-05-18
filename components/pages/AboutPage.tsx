@@ -241,92 +241,59 @@ export default function AboutPage() {
       {/* ── REVENUE + SUSTAINABILITY ── */}
       <section className="py-24 px-6 bg-[var(--bg-obsidian)]">
         <div className="max-w-5xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-16">
-            <div>
-              <div className="label mb-4">How We&apos;re Sustainable</div>
-              <h2
-                className="font-black tracking-tight leading-tight mb-6"
-                style={{ fontSize: "clamp(1.8rem, 3vw, 2.5rem)", color: "var(--text-cream)" }}
-              >
-                We make money when
-                <br />
-                <span style={{ color: "var(--green)" }}>the tool gets used.</span>
-              </h2>
-              <div className="space-y-4">
-                {[
-                  {
-                    title: "Freemium scanner",
-                    desc: "The Trash Scanner is free. Paste any address — Solana, Ethereum, or Base — and get live risk signals instantly.",
-                  },
-                  {
-                    title: "$CLEAN token launch",
-                    desc: "Fair launch on Solana — no pre-sale, no VC allocation, no insider unlock. Initial liquidity locked at launch.",
-                  },
-                  {
-                    title: "B2B API licensing",
-                    desc: "Exchanges, bridges, and DeFi protocols pay for trust signal data feeds. Enterprise contracts in Phase 7.",
-                  },
-                  {
-                    title: "$CLEAN utility (Phase 5)",
-                    desc: "Deep scans, API credits, priority queue, and governance access unlock via $CLEAN — rolling out in Phase 5.",
-                  },
-                ].map((item) => (
-                  <div key={item.title} className="flex gap-4">
-                    <div
-                      className="w-1.5 rounded-full flex-shrink-0 mt-1"
-                      style={{ background: "var(--green)", height: "auto", minHeight: 16 }}
-                    />
-                    <div>
-                      <div className="font-semibold text-sm mb-0.5" style={{ color: "var(--text-cream)" }}>
-                        {item.title}
-                      </div>
-                      <div className="text-sm leading-relaxed" style={{ color: "var(--text-muted)" }}>
-                        {item.desc}
-                      </div>
-                    </div>
+          <div className="label mb-4">How We&apos;re Sustainable</div>
+          <h2
+            className="font-black tracking-tight leading-tight mb-10"
+            style={{ fontSize: "clamp(1.8rem, 3vw, 2.5rem)", color: "var(--text-cream)" }}
+          >
+            We make money when{" "}
+            <span style={{ color: "var(--green)" }}>the tool gets used.</span>
+          </h2>
+          <div className="grid sm:grid-cols-2 gap-5">
+            {[
+              {
+                title: "Freemium scanner",
+                desc: "The Trash Scanner is free. Paste any address — Solana, Ethereum, or Base — and get live risk signals instantly.",
+              },
+              {
+                title: "$CLEAN token launch",
+                desc: "Fair launch on Solana — no pre-sale, no VC allocation, no insider unlock. Initial liquidity locked at launch.",
+              },
+              {
+                title: "B2B API licensing",
+                desc: "Exchanges, bridges, and DeFi protocols pay for trust signal data feeds. Enterprise API contracts in Phase 7.",
+              },
+              {
+                title: "$CLEAN utility",
+                desc: "Deep scans, API credits, priority queue, and governance access unlock via $CLEAN — rolling out in Phase 5.",
+              },
+            ].map((item) => (
+              <div key={item.title} className="card p-5 flex gap-4">
+                <div
+                  className="w-1.5 rounded-full flex-shrink-0 mt-1"
+                  style={{ background: "var(--green)", minHeight: 16 }}
+                />
+                <div>
+                  <div className="font-semibold text-sm mb-1" style={{ color: "var(--text-cream)" }}>
+                    {item.title}
                   </div>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <div className="label mb-4">What&apos;s Next</div>
-              <h2
-                className="font-black tracking-tight leading-tight mb-6"
-                style={{ fontSize: "clamp(1.8rem, 3vw, 2.5rem)", color: "var(--text-cream)" }}
-              >
-                $CLEAN launch next,
-                <br />
-                <span style={{ color: "var(--green)" }}>then scanner hardening.</span>
-              </h2>
-              <p className="leading-relaxed mb-6" style={{ color: "var(--text-muted)" }}>
-                Phase 2 is the $CLEAN token launch — fair launch on Solana, no pre-sale,
-                no VC allocation, initial liquidity locked. The launch comes before any utility
-                features. We build the token first, staking rolls out later in Phase 5.
-              </p>
-              <p className="leading-relaxed mb-6" style={{ color: "var(--text-muted)" }}>
-                Phase 3 hardens the scanner: LP lock verification, threat databases, wallet
-                cluster mapping. Phase 4 expands to more chains. Phase 5 activates $CLEAN
-                utility — staking, API credits, governance. Wallet connect ships with Phase 5,
-                fully audited before it goes live.
-              </p>
-              <div
-                className="p-4 rounded border border-[rgba(245,158,11,0.3)]"
-                style={{ background: "var(--amber-glow)" }}
-              >
-                <div className="text-xs font-semibold mb-1" style={{ color: "var(--amber)" }}>
-                  Wallet connect not live yet
+                  <div className="text-sm leading-relaxed" style={{ color: "var(--text-muted)" }}>
+                    {item.desc}
+                  </div>
                 </div>
-                <p className="text-xs leading-relaxed" style={{ color: "var(--text-muted)" }}>
-                  We will never ask you to connect a wallet until the integration is fully audited and the $CLEAN contract is verified. If someone is asking you to connect your wallet now, that&apos;s not us.
-                </p>
               </div>
-              <div className="mt-6">
-                <Link href="/roadmap" className="btn-ghost text-sm">
-                  View full roadmap <ArrowRight size={13} />
-                </Link>
-              </div>
+            ))}
+          </div>
+          <div
+            className="mt-8 p-4 rounded border border-[rgba(245,158,11,0.3)]"
+            style={{ background: "var(--amber-glow)" }}
+          >
+            <div className="text-xs font-semibold mb-1" style={{ color: "var(--amber)" }}>
+              Wallet connect not live yet
             </div>
+            <p className="text-xs leading-relaxed" style={{ color: "var(--text-muted)" }}>
+              We will never ask you to connect a wallet until the integration is fully audited and the $CLEAN contract is verified. If someone is asking you to connect your wallet now, that&apos;s not us.
+            </p>
           </div>
         </div>
       </section>
