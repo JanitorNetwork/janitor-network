@@ -6,12 +6,12 @@ import Image from "next/image";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 const PAGES = [
-  { num: "00", title: "Title Page",        sub: "The Night Shift Chronicles",                         file: "title-page.png" },
-  { num: "01", title: "A New Threat",      sub: "The night shift begins. TJ gets his first signal.",  file: "comic-1.png"    },
-  { num: "02", title: "FOMO Kevin",         sub: "He almost aped in without scanning. Almost.",        file: "comic-2.png"    },
-  { num: "03", title: "The Rug Artists",    sub: "TJ traces the deployer back four contracts.",        file: "comic-3.png"    },
-  { num: "04", title: "Clean Signal",       sub: "Not every token is trash — TJ confirms it.",         file: "comic-4.png"    },
-  { num: "05", title: "The Great Rug Hunt", sub: "Eight-panel adventure across the blockchain.",       file: "comic-5.png"    },
+  { num: "00", title: "Title Page",        sub: "The Night Shift Chronicles",                         file: "title-page.png", w: 1055, h: 1491 },
+  { num: "01", title: "A New Threat",      sub: "The night shift begins. TJ gets his first signal.",  file: "comic-1.png",    w: 1536, h: 1024 },
+  { num: "02", title: "FOMO Kevin",         sub: "He almost aped in without scanning. Almost.",        file: "comic-2.png",    w: 1536, h: 1024 },
+  { num: "03", title: "The Rug Artists",    sub: "TJ traces the deployer back four contracts.",        file: "comic-3.png",    w: 1536, h: 1024 },
+  { num: "04", title: "Clean Signal",       sub: "Not every token is trash — TJ confirms it.",         file: "comic-4.png",    w: 1536, h: 1024 },
+  { num: "05", title: "The Great Rug Hunt", sub: "Eight-panel adventure across the blockchain.",       file: "comic-5.png",    w: 1536, h: 1024 },
 ];
 
 export default function ComicsPage() {
@@ -179,10 +179,11 @@ export default function ComicsPage() {
               <Image
                 src={`/comics/${page.file}`}
                 alt={`${page.title}`}
-                width={1400}
-                height={2000}
+                width={page.w}
+                height={page.h}
                 style={{ width: "100%", height: "auto", display: "block" }}
                 quality={100}
+                unoptimized
                 priority
               />
             </motion.div>
