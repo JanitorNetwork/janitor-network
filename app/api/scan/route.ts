@@ -18,12 +18,21 @@ function safeErr(e: unknown): string {
   return e instanceof Error ? e.message : String(e);
 }
 
-// ── EVM chain config ──────────────────────────────────────────────────────────
-// Ethereum: Etherscan V2 (api.etherscan.io/v2/api, chainid=1, ETHERSCAN_API_KEY).
-// Base: Blockscout Etherscan-compatible API (base.blockscout.com/api, keyless).
-//   Etherscan V2 free plan blocks chainid=8453 (paid only).
-//   Basescan V1 (api.basescan.org/api) is also deprecated.
-//   Blockscout provides identical module/action coverage for Base at no cost.
+// ── Chain routing architecture ────────────────────────────────────────────────
+// Address format determines the processing path:
+//
+//   SOLANA  — base58, 32–44 chars, no 0x prefix
+//             → Helius RPC (mainnet.helius-rpc.com) + DAS API + Enhanced Txs
+//             → DexScreener for market data
+//
+//   ETHEREUM — 0x-prefix, 42-char EVM hex, chain=ethereum (default)
+//             → Etherscan V2 (api.etherscan.io/v2/api?chainid=1)
+//               Etherscan V1 (api.etherscan.io/api) is deprecated — V2 is free for ETH.
+//
+//   BASE L2  — 0x-prefix, 42-char EVM hex, chain=base (user-selected)
+//             → Blockscout (base.blockscout.com/api) — open-source, no key required
+//               Basescan V1 is deprecated. Etherscan V2 free plan blocks chainid=8453.
+//               Blockscout provides identical module/action coverage at $0.
 const EVM_CHAIN = {
   ethereum: {
     api:     "https://api.etherscan.io/v2/api",

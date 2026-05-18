@@ -9,73 +9,76 @@ const STATIONS = [
   { name: "Lo-fi Hip Hop",  vibe: "Smooth ambient tones",    url: "https://stream.laut.fm/lofi" },
 ];
 
+type PS = "idle" | "loading" | "playing" | "error";
+
 export default function LofiPlayer() {
-  const [playing, setPlaying]       = useState(false);
-  const [loading, setLoading]       = useState(false);
-  const [muted, setMuted]           = useState(false);
-  const [stationIdx, setStationIdx] = useState(0);
-  const [started, setStarted]       = useState(false);
-  const audioRef   = useRef<HTMLAudioElement | null>(null);
-  const startedRef = useRef(false);
-  startedRef.current = started;
+  const [ps, setPs]     = useState<PS>("idle");
+  const [muted, setMuted] = useState(false);
+  const [idx, setIdx]     = useState(0);
+  const elRef  = useRef<HTMLAudioElement | null>(null);
+  const idxRef = useRef(0);
+  idxRef.current = idx;
 
   useEffect(() => {
-    const el = new Audio();
+    const el = document.createElement("audio");
     el.volume = 0.28;
-    el.src = STATIONS[0].url;
-    el.preload = "none";
-    el.addEventListener("play",    () => { setPlaying(true);  setLoading(false); });
-    el.addEventListener("pause",   () => setPlaying(false));
-    el.addEventListener("waiting", () => setLoading(true));
-    el.addEventListener("canplay", () => setLoading(false));
-    el.addEventListener("error",   () => {
-      setLoading(false);
-      setPlaying(false);
-      setStationIdx(prev => (prev + 1) % STATIONS.length);
+
+    el.addEventListener("playing", () => setPs("playing"));
+    el.addEventListener("waiting", () => setPs("loading"));
+    el.addEventListener("error",   () => setPs("error"));
+
+    // Use a microtask so an immediately-following play() overrides "idle"
+    el.addEventListener("pause", () => {
+      Promise.resolve().then(() => {
+        if (elRef.current === el && el.paused) setPs("idle");
+      });
     });
-    audioRef.current = el;
-    return () => { el.pause(); el.src = ""; audioRef.current = null; };
+
+    elRef.current = el;
+    return () => {
+      el.pause();
+      el.src = "";
+      elRef.current = null;
+    };
   }, []);
 
-  // Only reload audio when station changes AFTER the user has started playback.
-  // Do NOT include 'started' in deps — triggering this effect when 'started'
-  // first becomes true would immediately pause the audio the user just started.
   useEffect(() => {
-    const el = audioRef.current;
-    if (!el || !startedRef.current) return;
-    const wasPlaying = !el.paused;
-    el.pause();
-    el.src = STATIONS[stationIdx].url;
-    el.load();
-    if (wasPlaying) {
-      setLoading(true);
-      el.play().catch(() => setLoading(false));
-    }
-  }, [stationIdx]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  useEffect(() => {
-    if (audioRef.current) audioRef.current.muted = muted;
+    const el = elRef.current;
+    if (el) el.muted = muted;
   }, [muted]);
 
-  const toggle = async () => {
-    const el = audioRef.current;
+  const startStation = (stationIndex: number) => {
+    const el = elRef.current;
     if (!el) return;
-    if (!el.paused) {
+    el.src = STATIONS[stationIndex].url;
+    setPs("loading");
+    el.play().catch(() => setPs("error"));
+  };
+
+  const toggle = () => {
+    const el = elRef.current;
+    if (!el) return;
+    if (ps === "playing" || ps === "loading") {
       el.pause();
     } else {
-      if (!startedRef.current) {
-        setStarted(true);
-        el.src = STATIONS[stationIdx].url;
-        el.load();
-      }
-      setLoading(true);
-      el.play().catch(() => setLoading(false));
+      startStation(idx);
     }
   };
 
-  const next = () => setStationIdx(p => (p + 1) % STATIONS.length);
+  const next = () => {
+    const newIdx = (idxRef.current + 1) % STATIONS.length;
+    setIdx(newIdx);
+    if (ps === "playing" || ps === "loading") {
+      const el = elRef.current;
+      if (el) { el.pause(); }
+      startStation(newIdx);
+    }
+  };
 
-  const st = STATIONS[stationIdx];
+  const st = STATIONS[idx];
+  const playing = ps === "playing";
+  const loading = ps === "loading";
+  const error   = ps === "error";
 
   return (
     <div
@@ -87,7 +90,7 @@ export default function LofiPlayer() {
         WebkitBackdropFilter: "blur(16px)",
       }}
     >
-      {/* Icon */}
+      {/* Status icon */}
       <div
         className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
         style={{
@@ -99,16 +102,16 @@ export default function LofiPlayer() {
       </div>
 
       {/* Station info */}
-      <div className="min-w-0" style={{ minWidth: 120 }}>
+      <div className="min-w-0" style={{ minWidth: 110 }}>
         <div className="text-xs font-bold leading-tight" style={{ color: "var(--text-cream)" }}>
-          {loading ? "Connecting…" : playing ? st.name : "Lo-fi Radio"}
+          {loading ? "Connecting…" : error ? "Stream offline" : playing ? st.name : "Lo-fi Radio"}
         </div>
         <div className="flex items-center gap-1.5 mt-0.5">
           {playing && (
             <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 animate-pulse-green" style={{ background: "var(--green)" }} />
           )}
           <span className="text-[9px] leading-none truncate" style={{ color: "var(--text-faint)" }}>
-            {playing ? st.vibe : "Click play for ambient music"}
+            {playing ? st.vibe : error ? "Try next →" : "Click play for ambient music"}
           </span>
         </div>
       </div>

@@ -7,16 +7,17 @@ import { Menu, X, ArrowRight } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import JanitorLogo from "@/components/JanitorLogo";
 
-const NAV_LINKS: { href: string; label: string; hot?: boolean }[] = [
+// desktopHide: true → link appears in mobile drawer only, not the desktop bar
+const NAV_LINKS: { href: string; label: string; hot?: boolean; desktopHide?: boolean }[] = [
   { href: "/",               label: "Home" },
   { href: "/scan",           label: "Trash Scanner" },
   { href: "/clean",          label: "$CLEAN" },
   { href: "/announcements",  label: "Announcements", hot: true },
   { href: "/roadmap",        label: "Roadmap" },
-  { href: "/gallery",        label: "Gallery" },
-  { href: "/comics",         label: "Comics" },
   { href: "/community",      label: "Community" },
   { href: "/about",          label: "About" },
+  { href: "/gallery",        label: "Gallery",  desktopHide: true },
+  { href: "/comics",         label: "Comics",   desktopHide: true },
 ];
 
 const SOCIAL = [
@@ -122,15 +123,15 @@ export default function Navbar() {
           {/* Separator */}
           <div className="hidden lg:block w-px h-6 flex-shrink-0" style={{ background: "var(--border-mid)" }} />
 
-          {/* Desktop nav links */}
+          {/* Desktop nav links — desktopHide items excluded */}
           <div className="hidden lg:flex items-center flex-1 min-w-0">
-            {NAV_LINKS.map((link) => {
+            {NAV_LINKS.filter(l => !l.desktopHide).map((link) => {
               const active = isActive(link.href);
               return (
                 <Link
                   key={link.href}
                   href={link.href}
-                  className="relative px-3 py-2 text-[11px] font-semibold tracking-[0.12em] uppercase transition-all duration-200 whitespace-nowrap flex-shrink-0 flex items-center gap-1.5"
+                  className="relative px-2 py-2 text-[11px] font-semibold tracking-[0.08em] uppercase transition-all duration-200 whitespace-nowrap flex-shrink-0 flex items-center gap-1.5"
                   style={{ color: active ? "var(--green)" : "var(--text-silver)" }}
                   onMouseEnter={e => { if (!active) (e.currentTarget as HTMLElement).style.color = "var(--text-cream)"; }}
                   onMouseLeave={e => { if (!active) (e.currentTarget as HTMLElement).style.color = "var(--text-silver)"; }}
@@ -141,7 +142,7 @@ export default function Navbar() {
                   )}
                   {active && (
                     <span
-                      className="absolute bottom-0 left-3 right-3 h-px"
+                      className="absolute bottom-0 left-2 right-2 h-px"
                       style={{ background: "var(--green)", boxShadow: "0 0 6px rgba(57,255,20,0.8)" }}
                     />
                   )}
