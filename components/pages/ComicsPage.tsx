@@ -181,9 +181,9 @@ export default function ComicsPage() {
                 alt={`${page.title}`}
                 width={1400}
                 height={2000}
-                style={{ width: "100%", height: "auto", display: "block", imageRendering: "crisp-edges" }}
+                style={{ width: "100%", height: "auto", display: "block" }}
+                quality={100}
                 priority
-                unoptimized
               />
             </motion.div>
           </AnimatePresence>
