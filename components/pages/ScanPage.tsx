@@ -935,6 +935,13 @@ export default function ScanPage() {
 
         </div>
       </div>
+
+      {/* Legal disclaimer */}
+      <div className="border-t border-[var(--border-faint)] px-6 py-5" style={{ background: "var(--bg-void)" }}>
+        <p className="max-w-5xl mx-auto text-[10px] leading-relaxed text-center" style={{ color: "var(--text-faint)" }}>
+          <strong style={{ color: "var(--text-muted)" }}>Legal disclaimer:</strong> The Janitor Network provides technical analysis of publicly available blockchain data. Scan outputs are informational only — not financial advice, investment recommendations, or legal findings. No guarantee of accuracy. Do your own research. Past scan results do not predict future outcomes.
+        </p>
+      </div>
     </div>
   );
 }
