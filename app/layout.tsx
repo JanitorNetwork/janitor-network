@@ -4,6 +4,8 @@ import "./globals.css";
 import Navbar from "@/components/Navbar";
 import TJChat from "@/components/TJChat";
 import WelcomeOverlay from "@/components/WelcomeOverlay";
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -49,6 +51,8 @@ export default function RootLayout({
         <Navbar />
         <main className="flex-1">{children}</main>
         <TJChat />
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );

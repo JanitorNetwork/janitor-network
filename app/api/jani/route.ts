@@ -3,6 +3,23 @@ import Anthropic from "@anthropic-ai/sdk";
 
 export const dynamic = "force-dynamic";
 
+const rateLimits = new Map<string, number[]>();
+
+function getIP(req: NextRequest): string {
+  const fwd = req.headers.get("x-forwarded-for");
+  if (fwd) return fwd.split(",")[0].trim();
+  return req.headers.get("x-real-ip") ?? "unknown";
+}
+
+function checkRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const times = (rateLimits.get(ip) ?? []).filter(t => now - t < 60_000);
+  if (times.length >= 10) return true;
+  times.push(now);
+  rateLimits.set(ip, times);
+  return false;
+}
+
 const TJ_SYSTEM_PROMPT = `You are TJ — The Janitor — the AI intelligence assistant for The Janitor Network (janitor.network).
 
 Your identity:
@@ -30,6 +47,11 @@ Tone: calm, sharp, a little tired but still showing up. Like a veteran who has s
 Never start responses with Hello, Great question, or any greeting. Just answer.`;
 
 export async function POST(request: NextRequest) {
+  const ip = getIP(request);
+  if (checkRateLimit(ip)) {
+    return NextResponse.json({ error: "Too many requests. Slow down." }, { status: 429 });
+  }
+
   let body: { messages?: unknown[] };
   try {
     body = await request.json();

@@ -49,6 +49,23 @@ interface ScanResponse {
 
 export const dynamic = "force-dynamic";
 
+const scanRateLimits = new Map<string, number[]>();
+
+function getScanIP(req: NextRequest): string {
+  const fwd = req.headers.get("x-forwarded-for");
+  if (fwd) return fwd.split(",")[0].trim();
+  return req.headers.get("x-real-ip") ?? "unknown";
+}
+
+function checkScanRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const times = (scanRateLimits.get(ip) ?? []).filter(t => now - t < 60_000);
+  if (times.length >= 20) return true;
+  times.push(now);
+  scanRateLimits.set(ip, times);
+  return false;
+}
+
 // ── Helius JSON-RPC ───────────────────────────────────────────────────────────
 const HELIUS_KEY = () => process.env.HELIUS_API_KEY ?? "";
 
@@ -673,6 +690,14 @@ function errResponse(address: string, logs: string[], msg: string): ScanResponse
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 export async function GET(request: NextRequest) {
+  const scanIP = getScanIP(request);
+  if (checkScanRateLimit(scanIP)) {
+    return NextResponse.json(
+      errResponse("", ["[ERROR] Rate limit exceeded."], "Too many requests — slow down."),
+      { status: 429 }
+    );
+  }
+
   const { searchParams } = request.nextUrl;
   const rawAddress = searchParams.get("address") ?? "";
   const chainParam = (searchParams.get("chain") ?? "ethereum") as "ethereum" | "base";
