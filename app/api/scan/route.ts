@@ -18,23 +18,25 @@ function safeErr(e: unknown): string {
   return e instanceof Error ? e.message : String(e);
 }
 
-// ── EVM chain config — Etherscan V2 (single endpoint, chainid selects network) ─
-// V1 (api.etherscan.io/api, api.basescan.org/api) is deprecated as of 2025.
-// V2 uses one key for all chains: https://docs.etherscan.io/v2-migration
+// ── EVM chain config ──────────────────────────────────────────────────────────
+// Ethereum: Etherscan V2 (single key, chainid=1). V1 deprecated as of 2025.
+// Base: Blockscout Etherscan-compatible API (keyless, same module/action format).
+//   Etherscan V2 free plan does not cover Base (chainid=8453) — paid plan required.
+//   Blockscout provides identical endpoint coverage for Base at no cost.
 const EVM_CHAIN = {
   ethereum: {
     api:     "https://api.etherscan.io/v2/api",
     chainId: "1",
-    apiV2:   "https://eth.blockscout.com/api/v2",  // Blockscout V2 for rich token metadata
+    apiV2:   "https://eth.blockscout.com/api/v2",
     label:   "Ethereum",
     key:     () => process.env.ETHERSCAN_API_KEY ?? "",
   },
   base: {
-    api:     "https://api.etherscan.io/v2/api",
-    chainId: "8453",
-    apiV2:   "https://base.blockscout.com/api/v2", // Blockscout V2 for rich token metadata
+    api:     "https://base.blockscout.com/api",    // Etherscan-compatible, keyless
+    chainId: "",                                    // Not used — Blockscout URL is chain-specific
+    apiV2:   "https://base.blockscout.com/api/v2",
     label:   "Base",
-    key:     () => process.env.ETHERSCAN_API_KEY ?? "",
+    key:     () => "",                             // Blockscout requires no API key
   },
 } as const;
 
@@ -182,11 +184,11 @@ async function enhancedTxs(address: string, limit = 100): Promise<EnhancedTx[]> 
   return res.json() as Promise<EnhancedTx[]>;
 }
 
-// ── Etherscan V2 ─────────────────────────────────────────────────────────────
+// ── EVM explorer fetch (Etherscan V2 or Blockscout Etherscan-compatible) ──────
 async function evmFetch(chain: "ethereum" | "base", params: Record<string, string>): Promise<Record<string, unknown>> {
   const cfg = EVM_CHAIN[chain];
   const url = new URL(cfg.api);
-  url.searchParams.set("chainid", cfg.chainId);
+  if (cfg.chainId) url.searchParams.set("chainid", cfg.chainId);
   Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
   const apiKey = cfg.key();
   if (apiKey) url.searchParams.set("apikey", apiKey);
