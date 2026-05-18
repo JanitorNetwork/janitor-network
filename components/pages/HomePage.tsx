@@ -372,10 +372,8 @@ export default function HomePage() {
                       style={{ background: "radial-gradient(circle, rgba(57,255,20,0.35) 0%, transparent 70%)" }}
                     />
                     <div
-                      className="relative rounded-full overflow-hidden"
+                      className="relative w-36 h-36 sm:w-44 sm:h-44 lg:w-[220px] lg:h-[220px] rounded-full overflow-hidden"
                       style={{
-                        width: 220,
-                        height: 220,
                         border: "2px solid rgba(57,255,20,0.4)",
                         boxShadow: "0 0 60px rgba(57,255,20,0.25), 0 0 120px rgba(57,255,20,0.1)",
                       }}
@@ -653,9 +651,8 @@ export default function HomePage() {
               className="relative"
             >
               <div
-                className="relative rounded-xl overflow-hidden"
+                className="relative rounded-xl overflow-hidden h-72 sm:h-96 lg:h-[500px]"
                 style={{
-                  height: 500,
                   boxShadow: "0 0 80px rgba(57,255,20,0.08), 0 0 0 1px var(--border-subtle)",
                 }}
               >
