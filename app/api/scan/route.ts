@@ -700,13 +700,20 @@ async function evmVolume(address: string, chain: "ethereum" | "base", logs: stri
 }
 
 // ── GoPlus Honeypot Detection ────────────────────────────────────────────────
+// Solana and EVM have different GoPlus endpoints AND different response schemas.
+// Solana: /api/v1/solana/token_security (no chain suffix) — returns program-authority fields
+// EVM:    /api/v1/token_security/{chainId}               — returns is_honeypot / sell_tax fields
 const GOPLUS_EVM_IDS: Record<"ethereum" | "base", string> = { ethereum: "1", base: "8453" };
+
+type GoPlusEVMData  = { is_honeypot?: string; cannot_sell_all?: string; cannot_buy?: string; sell_tax?: string; buy_tax?: string; honeypot_with_same_creator?: string; trusted_token?: string };
+type GoPlusSolData  = { non_transferable?: string; trusted_token?: number | string; mintable?: { status?: string }; freezable?: { status?: string }; transfer_hook?: unknown[]; transfer_fee?: Record<string, unknown> };
 
 async function goplusHoneypot(address: string, chain: Chain, logs: string[]): Promise<Signal> {
   try {
     let url: string;
     if (chain === "solana") {
-      url = `https://api.gopluslabs.io/api/v1/solana/token_security/mainnet?contract_addresses=${encodeURIComponent(address)}`;
+      // Correct endpoint: no /mainnet suffix
+      url = `https://api.gopluslabs.io/api/v1/solana/token_security?contract_addresses=${encodeURIComponent(address)}`;
     } else if (chain === "ethereum" || chain === "base") {
       url = `https://api.gopluslabs.io/api/v1/token_security/${GOPLUS_EVM_IDS[chain]}?contract_addresses=${encodeURIComponent(address)}`;
     } else {
@@ -716,29 +723,70 @@ async function goplusHoneypot(address: string, chain: Chain, logs: string[]): Pr
     const res = await fetch(url, { signal: AbortSignal.timeout(9000) });
     if (!res.ok) {
       logs.push(`[CAP5] GoPlus returned HTTP ${res.status}`);
-      return { status: "unknown", summary: "Honeypot check data unavailable — GoPlus API error." };
+      return { status: "unknown", summary: "Honeypot check data unavailable." };
     }
 
-    const json = await res.json() as { code?: number; message?: string; result?: Record<string, Record<string, string>> };
+    const json = await res.json() as { code?: number; message?: string; result?: Record<string, unknown> };
     if (json.code !== 1 || !json.result) {
-      logs.push(`[CAP5] GoPlus: ${json.message ?? "no result"}`);
-      return { status: "unknown", summary: "Honeypot check data unavailable — token not indexed by GoPlus." };
+      logs.push(`[CAP5] GoPlus: code=${json.code} msg=${json.message}`);
+      return { status: "unknown", summary: "Token not yet indexed by GoPlus Security." };
     }
 
-    // GoPlus keys result by address — EVM uses lowercase, Solana is case-sensitive
+    // GoPlus keys result by address (EVM lowercase, Solana case-sensitive)
     const key  = chain === "solana" ? address : address.toLowerCase();
-    const data = json.result[key] ?? json.result[Object.keys(json.result)[0]];
-    if (!data) {
-      logs.push("[CAP5] GoPlus: address not in result set");
-      return { status: "unknown", summary: "Honeypot check data unavailable — token not indexed by GoPlus." };
+    const raw  = json.result[key] ?? json.result[Object.keys(json.result)[0]];
+    if (!raw) {
+      logs.push("[CAP5] GoPlus: address not in result");
+      return { status: "unknown", summary: "Token not yet indexed by GoPlus Security." };
     }
 
-    const isHoneypot    = data.is_honeypot    === "1";
-    const cannotSell    = data.cannot_sell_all === "1";
-    const cannotBuy     = data.cannot_buy      === "1";
-    const sellTax       = parseFloat(data.sell_tax ?? "0");
-    const buyTax        = parseFloat(data.buy_tax  ?? "0");
-    const sameCreatorHp = data.honeypot_with_same_creator === "1";
+    // ── Solana response schema ──────────────────────────────────────────────
+    if (chain === "solana") {
+      const d = raw as GoPlusSolData;
+      const nonTransferable = d.non_transferable === "1";
+      const trusted         = Number(d.trusted_token) === 1;
+      const hasHook         = Array.isArray(d.transfer_hook) && d.transfer_hook.length > 0;
+      const hasFee          = d.transfer_fee && Object.keys(d.transfer_fee).length > 0;
+      const mintable        = d.mintable?.status === "1";
+      const freezable       = d.freezable?.status === "1";
+
+      let score: number;
+      const parts: string[] = [];
+
+      if (nonTransferable) {
+        score = 0;
+        parts.push("⚠️ NON-TRANSFERABLE — tokens cannot be sold or moved once received.");
+      } else if (hasHook) {
+        score = 20;
+        parts.push("⚠️ Custom transfer hook detected — contract can restrict or intercept transfers.");
+        if (freezable) parts.push("Freeze authority active.");
+      } else if (trusted) {
+        score = 100;
+        parts.push("GoPlus: trusted token.");
+        if (mintable)  parts.push("Mint authority active (known for regulated tokens like USDC).");
+        if (freezable) parts.push("Freeze authority active (expected for regulated tokens).");
+        if (hasFee)    parts.push("Transfer fee configured.");
+      } else {
+        score = freezable ? 60 : 85;
+        parts.push("No transfer restrictions detected.");
+        if (mintable)  parts.push("Mint authority active — creator can issue more tokens.");
+        if (freezable) parts.push("⚠️ Freeze authority active — creator can freeze token accounts.");
+        if (hasFee)    parts.push("Transfer fee configured.");
+      }
+
+      logs.push(`[CAP5] GoPlus Solana: trusted=${trusted} nonTransfer=${nonTransferable} hook=${hasHook} mintable=${mintable} freeze=${freezable} → score ${score}/100`);
+      return { status: toStatus(score), summary: parts.join(" "), score };
+    }
+
+    // ── EVM response schema ─────────────────────────────────────────────────
+    const d = raw as GoPlusEVMData;
+    const isHoneypot    = d.is_honeypot    === "1";
+    const cannotSell    = d.cannot_sell_all === "1";
+    const cannotBuy     = d.cannot_buy      === "1";
+    const sellTax       = parseFloat(d.sell_tax ?? "0");
+    const buyTax        = parseFloat(d.buy_tax  ?? "0");
+    const sameCreatorHp = d.honeypot_with_same_creator === "1";
+    const trusted       = d.trusted_token === "1";
 
     const parts: string[] = [];
     let score: number;
@@ -761,9 +809,10 @@ async function goplusHoneypot(address: string, chain: Chain, logs: string[]): Pr
       score = 55;
       parts.push(`Elevated sell tax: ${sellTax}%.`);
     } else {
-      score = 100;
+      score = trusted ? 100 : 95;
       parts.push(`No honeypot detected.`);
       parts.push(`Buy/sell tax: ${buyTax}% / ${sellTax}%.`);
+      if (trusted) parts.push("GoPlus: trusted token.");
     }
 
     if (sameCreatorHp && score > 10) {
@@ -771,7 +820,7 @@ async function goplusHoneypot(address: string, chain: Chain, logs: string[]): Pr
       parts.push("⚠️ Creator has deployed honeypots under other contracts.");
     }
 
-    logs.push(`[CAP5] GoPlus: honeypot=${isHoneypot} sellTax=${sellTax}% buyTax=${buyTax}% sameCreatorHp=${sameCreatorHp} → score ${score}/100`);
+    logs.push(`[CAP5] GoPlus EVM: honeypot=${isHoneypot} sellTax=${sellTax}% buyTax=${buyTax}% sameCreator=${sameCreatorHp} → score ${score}/100`);
     return { status: toStatus(score), summary: parts.join(" "), score };
   } catch (e) {
     logs.push(`[CAP5] GoPlus check failed: ${safeErr(e)}`);
