@@ -12,6 +12,7 @@ import {
   ArrowRight,
   ExternalLink,
 } from "lucide-react";
+import LaunchCountdown from "@/components/LaunchCountdown";
 
 const UTILITY = [
   {
@@ -156,6 +157,19 @@ export default function CleanPage() {
               </div>
             </motion.div>
           </div>
+        </div>
+      </section>
+
+      {/* ── LAUNCH COUNTDOWN ── */}
+      <section className="py-14 px-6 border-b border-[var(--border-faint)]" style={{ background: "var(--bg-charcoal)" }}>
+        <div className="max-w-lg mx-auto text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+          >
+            <LaunchCountdown />
+          </motion.div>
         </div>
       </section>
 

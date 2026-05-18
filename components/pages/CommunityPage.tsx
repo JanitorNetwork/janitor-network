@@ -88,7 +88,7 @@ export default function CommunityPage() {
     <div className="min-h-screen bg-[var(--bg-void)] pt-20">
 
       {/* ── VIDEO HERO ───────────────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden" style={{ height: "62vh", minHeight: 420, maxHeight: 640 }}>
+      <section className="relative overflow-hidden" style={{ minHeight: "clamp(480px, 62vh, 640px)" }}>
         {/* Looping video */}
         <video
           src="/community/video.mp4"
@@ -98,12 +98,12 @@ export default function CommunityPage() {
           playsInline
           className="absolute inset-0 w-full h-full object-cover"
         />
-        {/* Gradient overlays — lighter to let video breathe */}
+        {/* Gradient overlays */}
         <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(6,6,6,0.3) 0%, rgba(6,6,6,0.1) 40%, rgba(6,6,6,0.65) 100%)" }} />
         <div className="absolute inset-0" style={{ background: "linear-gradient(to right, rgba(6,6,6,0.5) 0%, transparent 55%)" }} />
 
         {/* Content overlay */}
-        <div className="absolute inset-0 flex flex-col justify-between p-8 md:p-12">
+        <div className="absolute inset-0 flex flex-col justify-between p-6 md:p-12">
           {/* Top badge */}
           <div className="flex items-center gap-3">
             <span className="w-2 h-2 rounded-full animate-pulse-green" style={{ background: "var(--green)" }} />
@@ -117,7 +117,7 @@ export default function CommunityPage() {
           </div>
 
           {/* Bottom content */}
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-8">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -125,8 +125,8 @@ export default function CommunityPage() {
               className="max-w-2xl"
             >
               <h1
-                className="font-black leading-tight tracking-tight mb-4"
-                style={{ fontSize: "clamp(2rem, 5vw, 3.8rem)", color: "var(--text-cream)", textShadow: "0 2px 20px rgba(0,0,0,0.5)" }}
+                className="font-black leading-tight tracking-tight mb-3"
+                style={{ fontSize: "clamp(1.8rem, 5vw, 3.8rem)", color: "var(--text-cream)", textShadow: "0 2px 20px rgba(0,0,0,0.5)" }}
               >
                 The community that
                 <br />
@@ -134,11 +134,12 @@ export default function CommunityPage() {
                   actually protects you.
                 </span>
               </h1>
-              <p className="text-base leading-relaxed mb-6 max-w-xl" style={{ color: "rgba(255,255,255,0.75)" }}>
+              <p className="text-sm md:text-base leading-relaxed mb-4 max-w-xl" style={{ color: "rgba(255,255,255,0.75)" }}>
                 Talk freely. Share intel. Flag threats. Tag @TJ when you need the AI.
                 Shillers, bots, and bad actors are removed before anyone sees them.
               </p>
-              <div className="flex flex-wrap gap-3">
+              {/* Socials — all btn-primary, wrap cleanly on mobile */}
+              <div className="flex flex-wrap gap-2">
                 <a href="https://t.me/TheJanitorHQ" target="_blank" rel="noopener noreferrer" className="btn-primary">
                   Join Telegram <ExternalLink size={13} />
                 </a>
@@ -148,18 +149,22 @@ export default function CommunityPage() {
                 <a href="https://www.tiktok.com/@.thejanitorhq" target="_blank" rel="noopener noreferrer" className="btn-primary">
                   TikTok <ExternalLink size={13} />
                 </a>
-                <a href="https://github.com/JanitorNetwork/janitor-network" target="_blank" rel="noopener noreferrer" className="btn-ghost">
+                <a href="https://github.com/JanitorNetwork/janitor-network" target="_blank" rel="noopener noreferrer" className="btn-primary">
                   GitHub <ExternalLink size={13} />
                 </a>
               </div>
+              {/* Lo-fi player — mobile only, sits below buttons */}
+              <div className="mt-4 md:hidden">
+                <LofiPlayer />
+              </div>
             </motion.div>
 
-            {/* Lo-fi player */}
+            {/* Lo-fi player — desktop only, floats right */}
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
-              className="flex-shrink-0"
+              className="hidden md:block flex-shrink-0"
             >
               <LofiPlayer />
             </motion.div>
@@ -309,7 +314,7 @@ export default function CommunityPage() {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid sm:grid-cols-2 xl:grid-cols-4 gap-6">
             {PLATFORMS.map((p, i) => (
               <motion.a
                 key={p.name}
@@ -366,7 +371,7 @@ export default function CommunityPage() {
             <a href="https://www.tiktok.com/@.thejanitorhq" target="_blank" rel="noopener noreferrer" className="btn-primary">
               TikTok <ExternalLink size={13} />
             </a>
-            <a href="https://github.com/JanitorNetwork/janitor-network" target="_blank" rel="noopener noreferrer" className="btn-ghost">
+            <a href="https://github.com/JanitorNetwork/janitor-network" target="_blank" rel="noopener noreferrer" className="btn-primary">
               GitHub <ExternalLink size={13} />
             </a>
           </div>

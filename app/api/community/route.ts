@@ -363,3 +363,32 @@ export async function POST(request: NextRequest) {
     { status: 200, headers: { "Cache-Control": "no-store" } }
   );
 }
+
+// ── Admin: unban a user ───────────────────────────────────────────────────────
+// DELETE /api/community?handle=<username>&key=<ADMIN_SECRET>
+export async function DELETE(request: NextRequest) {
+  const { searchParams } = request.nextUrl;
+  const key    = searchParams.get("key") ?? "";
+  const handle = (searchParams.get("handle") ?? "").trim().toLowerCase();
+
+  if (!process.env.ADMIN_SECRET || key !== process.env.ADMIN_SECRET) {
+    return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  }
+  if (!handle) {
+    return NextResponse.json({ error: "handle param required." }, { status: 400 });
+  }
+
+  const wasBanned = bannedUsers.has(handle);
+  bannedUsers.delete(handle);
+  warnCounts.delete(handle);
+
+  addTJ(`${handle} has been reinstated by an administrator.`, "system");
+
+  return NextResponse.json({
+    ok: true,
+    unbanned: wasBanned,
+    message: wasBanned
+      ? `${handle} has been unbanned and warn count cleared.`
+      : `${handle} was not in the ban list — warn count cleared anyway.`,
+  });
+}

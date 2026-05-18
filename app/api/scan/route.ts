@@ -18,10 +18,20 @@ function safeErr(e: unknown): string {
   return e instanceof Error ? e.message : String(e);
 }
 
-// ── EVM chain config — Blockscout (free, no API key required) ─────────────────
+// ── EVM chain config — Etherscan / Basescan (uses API keys from env) ──────────
 const EVM_CHAIN = {
-  ethereum: { api: "https://eth.blockscout.com/api",  apiV2: "https://eth.blockscout.com/api/v2",  label: "Ethereum" },
-  base:     { api: "https://base.blockscout.com/api", apiV2: "https://base.blockscout.com/api/v2", label: "Base"     },
+  ethereum: {
+    api:    "https://api.etherscan.io/api",
+    apiV2:  "https://eth.blockscout.com/api/v2",  // Blockscout V2 for rich token metadata
+    label:  "Ethereum",
+    key:    () => process.env.ETHERSCAN_API_KEY ?? "",
+  },
+  base: {
+    api:    "https://api.basescan.org/api",
+    apiV2:  "https://base.blockscout.com/api/v2", // Blockscout V2 for rich token metadata
+    label:  "Base",
+    key:    () => process.env.BASESCAN_API_KEY ?? "",
+  },
 } as const;
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -169,11 +179,12 @@ async function enhancedTxs(address: string, limit = 100): Promise<EnhancedTx[]> 
 }
 
 // ── Etherscan / Basescan ──────────────────────────────────────────────────────
-// Blockscout Etherscan-compatible API (no API key required)
 async function evmFetch(chain: "ethereum" | "base", params: Record<string, string>): Promise<Record<string, unknown>> {
   const cfg = EVM_CHAIN[chain];
   const url = new URL(cfg.api);
   Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
+  const apiKey = cfg.key();
+  if (apiKey) url.searchParams.set("apikey", apiKey);
   const res = await fetch(url.toString(), { signal: AbortSignal.timeout(9000) });
   if (!res.ok) throw new Error(`${cfg.label} HTTP ${res.status}`);
   const j = await res.json() as Record<string, unknown>;
