@@ -69,7 +69,8 @@ interface ScanResponse {
   dataStatus: string; cleanScore: number | null; scoreStatus: ScoreStatus;
   scoreLabel: string; classification: string;
   meta?: TokenMeta;
-  signals: { addressFormat: Signal; holderConcentration: Signal; liquiditySecurity: Signal; deployerHistory: Signal; volumeBehavior: Signal; };
+  signals: { addressFormat: Signal; holderConcentration: Signal; liquiditySecurity: Signal; deployerHistory: Signal; volumeBehavior: Signal; honeypotCheck: Signal; };
+  tjMessage: string;
   logs: string[]; disclaimer: string; scannedAt: string;
 }
 
@@ -225,10 +226,10 @@ function toStatus(score: number): SignalStatus {
   return score >= 70 ? "valid" : score >= 40 ? "unknown" : "invalid";
 }
 
-// SRS formula: (Holder*0.30) + (History*0.25) + (Liquidity*0.25) + (Volume*0.20)
+// SRS formula: (Holder*0.25) + (History*0.20) + (Liquidity*0.20) + (Volume*0.15) + (Honeypot*0.20)
 // Missing signals excluded and remaining weights rescaled proportionally.
-function computeScore(h: number | null, d: number | null, l: number | null, v: number | null): number {
-  const w = [[h, 0.30], [d, 0.25], [l, 0.25], [v, 0.20]] as [number | null, number][];
+function computeScore(h: number | null, d: number | null, l: number | null, v: number | null, hp: number | null): number {
+  const w = [[h, 0.25], [d, 0.20], [l, 0.20], [v, 0.15], [hp, 0.20]] as [number | null, number][];
   let sum = 0, total = 0;
   for (const [val, wt] of w) {
     if (val !== null) { sum += val * wt; total += wt; }
@@ -698,6 +699,131 @@ async function evmVolume(address: string, chain: "ethereum" | "base", logs: stri
   }
 }
 
+// ── GoPlus Honeypot Detection ────────────────────────────────────────────────
+const GOPLUS_EVM_IDS: Record<"ethereum" | "base", string> = { ethereum: "1", base: "8453" };
+
+async function goplusHoneypot(address: string, chain: Chain, logs: string[]): Promise<Signal> {
+  try {
+    let url: string;
+    if (chain === "solana") {
+      url = `https://api.gopluslabs.io/api/v1/solana/token_security/mainnet?contract_addresses=${encodeURIComponent(address)}`;
+    } else if (chain === "ethereum" || chain === "base") {
+      url = `https://api.gopluslabs.io/api/v1/token_security/${GOPLUS_EVM_IDS[chain]}?contract_addresses=${encodeURIComponent(address)}`;
+    } else {
+      return { status: "unknown", summary: "Honeypot check not supported for this chain." };
+    }
+
+    const res = await fetch(url, { signal: AbortSignal.timeout(9000) });
+    if (!res.ok) {
+      logs.push(`[CAP5] GoPlus returned HTTP ${res.status}`);
+      return { status: "unknown", summary: "Honeypot check data unavailable — GoPlus API error." };
+    }
+
+    const json = await res.json() as { code?: number; message?: string; result?: Record<string, Record<string, string>> };
+    if (json.code !== 1 || !json.result) {
+      logs.push(`[CAP5] GoPlus: ${json.message ?? "no result"}`);
+      return { status: "unknown", summary: "Honeypot check data unavailable — token not indexed by GoPlus." };
+    }
+
+    // GoPlus keys result by address — EVM uses lowercase, Solana is case-sensitive
+    const key  = chain === "solana" ? address : address.toLowerCase();
+    const data = json.result[key] ?? json.result[Object.keys(json.result)[0]];
+    if (!data) {
+      logs.push("[CAP5] GoPlus: address not in result set");
+      return { status: "unknown", summary: "Honeypot check data unavailable — token not indexed by GoPlus." };
+    }
+
+    const isHoneypot    = data.is_honeypot    === "1";
+    const cannotSell    = data.cannot_sell_all === "1";
+    const cannotBuy     = data.cannot_buy      === "1";
+    const sellTax       = parseFloat(data.sell_tax ?? "0");
+    const buyTax        = parseFloat(data.buy_tax  ?? "0");
+    const sameCreatorHp = data.honeypot_with_same_creator === "1";
+
+    const parts: string[] = [];
+    let score: number;
+
+    if (isHoneypot || (sellTax >= 99 && !isNaN(sellTax))) {
+      score = 0;
+      parts.push("⚠️ HONEYPOT DETECTED — sell transactions are blocked or taxed to zero.");
+      if (cannotSell) parts.push("Contract explicitly prevents all sells.");
+      if (sameCreatorHp) parts.push("Creator has deployed other honeypots.");
+    } else if (cannotBuy) {
+      score = 10;
+      parts.push("⚠️ Buy transactions are currently blocked by the contract.");
+    } else if (sellTax > 50) {
+      score = 10;
+      parts.push(`⚠️ Sell tax is extremely high: ${sellTax}% — effectively a trap.`);
+    } else if (sellTax > 20) {
+      score = 30;
+      parts.push(`⚠️ High sell tax: ${sellTax}%.`);
+    } else if (sellTax > 10) {
+      score = 55;
+      parts.push(`Elevated sell tax: ${sellTax}%.`);
+    } else {
+      score = 100;
+      parts.push(`No honeypot detected.`);
+      parts.push(`Buy/sell tax: ${buyTax}% / ${sellTax}%.`);
+    }
+
+    if (sameCreatorHp && score > 10) {
+      score = Math.max(0, score - 20);
+      parts.push("⚠️ Creator has deployed honeypots under other contracts.");
+    }
+
+    logs.push(`[CAP5] GoPlus: honeypot=${isHoneypot} sellTax=${sellTax}% buyTax=${buyTax}% sameCreatorHp=${sameCreatorHp} → score ${score}/100`);
+    return { status: toStatus(score), summary: parts.join(" "), score };
+  } catch (e) {
+    logs.push(`[CAP5] GoPlus check failed: ${safeErr(e)}`);
+    return { status: "unknown", summary: "Honeypot check unavailable — data source error." };
+  }
+}
+
+// ── TJ Message Generator ──────────────────────────────────────────────────────
+function generateTJMessage(score: number | null, status: ScoreStatus, hp: Signal, targetType: string): string {
+  if (hp.score !== undefined && hp.score <= 10) {
+    const msgs = [
+      "Mop down. This thing doesn't let you sell. Classic roach trap — they built it to take your money, not make you any. I'm not cleaning this one up.",
+      "Called it. Honeypot. The buy goes through, the sell doesn't. You hand them your bag and say goodbye. Night shift doesn't recommend this.",
+      "This is a trap. Literally. You can buy in, but the exit door is welded shut. Walk away. I've seen what happens to the ones who didn't.",
+    ];
+    return msgs[Math.floor(Date.now() / 1000) % msgs.length];
+  }
+
+  if (score === null) {
+    return "Not enough data to score this one. Could be brand new, could be nothing — either way, the floor's still wet. Come back when there's more activity on-chain.";
+  }
+
+  if (status === "risk") {
+    const msgs = [
+      "This one's got red flags everywhere. I've seen cleaner crime scenes. Not my job to stop you — it's my job to warn you.",
+      "Trash bag. Multiple signals lighting up at once. I wouldn't touch this without a hazmat suit. The data's talking — you should listen.",
+      "I'm not saying it's a rug. I'm saying the lights are off, the floor is wet, and the deployer left the back door open. Your call.",
+    ];
+    return msgs[Math.floor(Date.now() / 1000) % msgs.length];
+  }
+
+  if (status === "caution") {
+    const msgs = [
+      "Mixed signals. Not clean, not a dumpster fire — somewhere in between. The night shift's watching this one.",
+      "I see what they're doing here. Not screaming red flags, but I wouldn't sleep on it. Keep an eye and set your exits.",
+      "Could go either way. Some signals solid, others I don't love. This is your DYOR moment — I gave you the data.",
+    ];
+    return msgs[Math.floor(Date.now() / 1000) % msgs.length];
+  }
+
+  if (targetType === "wallet") {
+    return "Wallet checks out. No deployer flags in the database and clean transaction patterns. One clean scan doesn't make a saint — stay sharp.";
+  }
+
+  const msgs = [
+    "Night shift done. Signals check out. Still DYOR — I scan, you decide.",
+    "Floor's clean. For now. Nothing major jumping out from the data. Keep watching the volume.",
+    "Looks solid from my end. Mint's tight, distribution's reasonable, no honeypot. That's as clean as it gets on-chain.",
+  ];
+  return msgs[Math.floor(Date.now() / 1000) % msgs.length];
+}
+
 // ── Error response ────────────────────────────────────────────────────────────
 function errResponse(address: string, logs: string[], msg: string): ScanResponse {
   return {
@@ -710,7 +836,9 @@ function errResponse(address: string, logs: string[], msg: string): ScanResponse
       liquiditySecurity:   { status: "unknown", summary: "Not enough verified data yet." },
       deployerHistory:     { status: "unknown", summary: "Not enough verified data yet." },
       volumeBehavior:      { status: "unknown", summary: "Not enough verified data yet." },
+      honeypotCheck:       { status: "unknown", summary: "Not enough verified data yet." },
     },
+    tjMessage: "Couldn't run the full scan on that one. Check the format and try again — the night shift's still here.",
     logs, disclaimer: "Not financial advice. Outputs are technical assessments of public on-chain data.",
     scannedAt: new Date().toISOString(),
   };
@@ -761,7 +889,9 @@ export async function GET(request: NextRequest) {
             liquiditySecurity:   { status: "unknown",  summary: "Not enough verified data yet — account does not exist." },
             deployerHistory:     { status: "unknown",  summary: "Not enough verified data yet — account does not exist." },
             volumeBehavior:      { status: "unknown",  summary: "Not enough verified data yet — account does not exist." },
+            honeypotCheck:       { status: "unknown",  summary: "Not enough verified data yet — account does not exist." },
           },
+          tjMessage: "Nothing on-chain with this address. It's either fresh out of the mint or you got a typo. Double-check and try again.",
           logs, disclaimer: "Not financial advice.",
           scannedAt: new Date().toISOString(),
         }, { headers: { "Cache-Control": "no-store" } });
@@ -781,18 +911,21 @@ export async function GET(request: NextRequest) {
         logs.push("[CAP2] Locating creation transaction...");
         logs.push("[CAP3] Checking mint/freeze authority...");
         logs.push("[CAP4] Fetching on-chain volume data...");
+        logs.push("[CAP5] Checking honeypot status via GoPlus...");
 
-        // Parallel: holder + deployer + volume + DAS metadata + market data + holder count
+        // Parallel: holder + deployer + volume + honeypot + DAS metadata + market data + holder count
         cap3 = solLiquidity(mintInfo, logs);
-        const [cap1r, cap2r, cap4r, assetData, market, hCount] = await Promise.all([
+        const [cap1r, cap2r, cap4r, cap5r, assetData, market, hCount] = await Promise.all([
           solHolder(address, logs),
           solDeployer(address, mintInfo, logs),
           solVolume(address, true, logs),
+          goplusHoneypot(address, "solana", logs),
           dasGetAsset(address),
           solMarketData(address),
           solHolderCount(address),
         ]);
         cap1 = cap1r; cap2 = cap2r; cap4 = cap4r;
+        const cap5 = cap5r;
 
         // Extract token name/symbol/icon from DAS result (already the asset object)
         const assetContent = assetData?.content as Record<string, unknown> | null;
@@ -809,7 +942,7 @@ export async function GET(request: NextRequest) {
           ...(hCount != null    ? { holdersCount: hCount }           : {}),
         };
 
-        const final  = computeScore(cap1.score ?? null, cap2.score ?? null, cap3.score ?? null, cap4.score ?? null);
+        const final  = computeScore(cap1.score ?? null, cap2.score ?? null, cap3.score ?? null, cap4.score ?? null, cap5.score ?? null);
         const status = scoreStatus(final);
         logs.push(`[RESULT] Clean Score: ${final}/100 — ${SCORE_LABELS[status]}`);
 
@@ -828,7 +961,9 @@ export async function GET(request: NextRequest) {
             deployerHistory:     cap2,
             liquiditySecurity:   cap3,
             volumeBehavior:      cap4,
+            honeypotCheck:       cap5,
           },
+          tjMessage: generateTJMessage(final, status, cap5, "token_mint"),
           logs,
           disclaimer: "Scanner metrics are derived from publicly available on-chain data only. Not financial advice and not criminal findings.",
           scannedAt: new Date().toISOString(),
@@ -844,8 +979,9 @@ export async function GET(request: NextRequest) {
           ? { status: "invalid", summary: "⚠️ This wallet is in the known rug deployer database.", score: 0 }
           : { status: "valid",   summary: "Wallet not found in rug deployer database.", score: 100 };
         cap4 = await solVolume(address, false, logs);
+        const walletHp: Signal = { status: "unknown", summary: "Not applicable — honeypot detection runs on token contracts, not wallet addresses." };
 
-        const final  = computeScore(null, cap2.score ?? null, null, cap4.score ?? null);
+        const final  = computeScore(null, cap2.score ?? null, null, cap4.score ?? null, null);
         const status = scoreStatus(final);
         logs.push(`[RESULT] Clean Score: ${final}/100 — ${SCORE_LABELS[status]}`);
 
@@ -863,7 +999,9 @@ export async function GET(request: NextRequest) {
             deployerHistory:     cap2,
             liquiditySecurity:   cap3,
             volumeBehavior:      cap4,
+            honeypotCheck:       walletHp,
           },
+          tjMessage: generateTJMessage(final, status, walletHp, "wallet"),
           logs,
           disclaimer: "Scanner metrics are derived from publicly available on-chain data only. Not financial advice and not criminal findings.",
           scannedAt: new Date().toISOString(),
@@ -885,26 +1023,28 @@ export async function GET(request: NextRequest) {
     logs.push("[CAP2] Fetching contract deployer...");
     logs.push("[CAP3] Checking contract verification and security...");
     logs.push("[CAP4] Analyzing transaction patterns...");
+    logs.push("[CAP5] Checking honeypot status via GoPlus...");
 
     try {
     // All calls run in parallel — each has its own try/catch so individual
     // failures return null scores without collapsing the whole scan.
-    const [tokenData, cap2, cap3, cap4] = await Promise.all([
+    const [tokenData, cap2, cap3, cap4, cap5] = await Promise.all([
       evmTokenData(address, chainParam, logs),
       evmDeployer(address, chainParam, logs),
       evmSecurity(address, chainParam, logs),
       evmVolume(address, chainParam, logs),
+      goplusHoneypot(address, chainParam, logs),
     ]);
 
     const cap1 = tokenData.signal;
     const meta = tokenData.meta;
 
-    const scores    = [cap1, cap2, cap3, cap4].filter(s => s.score !== undefined);
+    const scores    = [cap1, cap2, cap3, cap4, cap5].filter(s => s.score !== undefined);
     const liveCount = scores.length;
-    const final     = computeScore(cap1.score ?? null, cap2.score ?? null, cap3.score ?? null, cap4.score ?? null);
+    const final     = computeScore(cap1.score ?? null, cap2.score ?? null, cap3.score ?? null, cap4.score ?? null, cap5.score ?? null);
     const status    = scoreStatus(final);
-    const isFullData = liveCount === 4;
-    logs.push(`[RESULT] Clean Score: ${final}/100 — ${SCORE_LABELS[status]} (${liveCount} of 4 signals live)`);
+    const isFullData = liveCount === 5;
+    logs.push(`[RESULT] Clean Score: ${final}/100 — ${SCORE_LABELS[status]} (${liveCount} of 5 signals live)`);
 
     return NextResponse.json<ScanResponse>({
       success: true, address, chain: chainParam,
@@ -921,7 +1061,9 @@ export async function GET(request: NextRequest) {
         deployerHistory:     cap2,
         liquiditySecurity:   cap3,
         volumeBehavior:      cap4,
+        honeypotCheck:       cap5,
       },
+      tjMessage: generateTJMessage(final, status, cap5, cap2.score !== undefined ? "token_contract" : "wallet_or_eoa"),
       logs,
       disclaimer: "Scanner metrics are derived from publicly available on-chain data only. Not financial advice and not criminal findings.",
       scannedAt: new Date().toISOString(),

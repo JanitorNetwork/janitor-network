@@ -17,6 +17,7 @@ import {
   DollarSign,
   BarChart2,
   Activity,
+  Shield,
 } from "lucide-react";
 
 const SOLANA_RE = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
@@ -55,7 +56,9 @@ interface ScanResult {
     liquiditySecurity:   SignalEntry;
     deployerHistory:     SignalEntry;
     volumeBehavior:      SignalEntry;
+    honeypotCheck:       SignalEntry;
   };
+  tjMessage?: string;
   logs:       string[];
   disclaimer: string;
   scannedAt:  string;
@@ -67,6 +70,7 @@ const SIGNAL_LABELS: Record<keyof ScanResult["signals"], string> = {
   liquiditySecurity:   "Liquidity Security",
   deployerHistory:     "Deployer History",
   volumeBehavior:      "Volume Behavior",
+  honeypotCheck:       "Honeypot Detection",
 };
 
 const EXAMPLES = [
@@ -84,9 +88,10 @@ const SCAN_LOG_LINES = [
   { text: "[FETCH]   Querying deployer wallet history…",              delay: 2.1 },
   { text: "[FETCH]   Retrieving liquidity pool parameters…",          delay: 2.7 },
   { text: "[FETCH]   Sampling 48h volume behavior patterns…",         delay: 3.3 },
-  { text: "[PARSE]   Cross-referencing on-chain ledger entries…",     delay: 4.1 },
-  { text: "[CALC]    Weighting risk signals across all vectors…",     delay: 4.9 },
-  { text: "[CALC]    Computing aggregate CLEAN score…",               delay: 5.7 },
+  { text: "[FETCH]   Running GoPlus honeypot detection…",             delay: 3.9 },
+  { text: "[PARSE]   Cross-referencing on-chain ledger entries…",     delay: 4.7 },
+  { text: "[CALC]    Weighting risk signals across all vectors…",     delay: 5.5 },
+  { text: "[CALC]    Computing aggregate CLEAN score…",               delay: 6.3 },
 ];
 
 function fmtPrice(val: string | undefined): string {
@@ -451,6 +456,11 @@ export default function ScanPage() {
       status: "live",
       desc:   "48h transaction pattern analysis",
     },
+    {
+      label:  "Honeypot Detection",
+      status: "live",
+      desc:   "GoPlus Security API — sell-block & tax trap detection",
+    },
   ];
 
   return (
@@ -711,6 +721,34 @@ export default function ScanPage() {
                     </div>
                   </motion.div>
 
+                  {/* TJ message */}
+                  {result.tjMessage && (
+                    <div
+                      className="rounded-xl mb-5 p-5"
+                      style={{ background: "var(--bg-charcoal)", border: "1px solid rgba(57,255,20,0.25)", boxShadow: "0 0 20px rgba(57,255,20,0.04)" }}
+                    >
+                      <div className="flex items-start gap-4">
+                        <div
+                          className="flex-shrink-0 w-10 h-10 rounded-full overflow-hidden"
+                          style={{ border: "2px solid rgba(57,255,20,0.35)" }}
+                        >
+                          <Image src="/mascot/IMG_8490.jpeg" alt="TJ" width={40} height={40} className="object-cover w-full h-full" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="text-[10px] font-bold tracking-widest uppercase font-mono-jn" style={{ color: "var(--green)" }}>
+                              TJ // Night Shift Assessment
+                            </span>
+                            <Shield size={10} style={{ color: "var(--green)", flexShrink: 0 }} />
+                          </div>
+                          <p className="leading-relaxed" style={{ color: "var(--text-cream)", fontSize: "0.95rem", fontStyle: "italic" }}>
+                            &ldquo;{result.tjMessage}&rdquo;
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Signals */}
                   <div className="rounded-xl mb-5" style={{ background: "var(--bg-charcoal)", border: "1px solid var(--border-subtle)" }}>
                     <div className="px-7 pt-6 pb-2">
@@ -931,9 +969,9 @@ export default function ScanPage() {
               <div className="label mb-4">Supported Chains</div>
               <div className="space-y-3">
                 {[
-                  { name: "Solana",   status: "Full scan — 5 signals", color: "var(--green)" },
-                  { name: "Ethereum", status: "Full scan — 4 signals", color: "var(--green)" },
-                  { name: "Base",     status: "Full scan — 4 signals", color: "var(--green)" },
+                  { name: "Solana",   status: "Full scan — 6 signals", color: "var(--green)" },
+                  { name: "Ethereum", status: "Full scan — 6 signals", color: "var(--green)" },
+                  { name: "Base",     status: "Full scan — 6 signals", color: "var(--green)" },
                   { name: "More",     status: "Phase 3",               color: "var(--text-faint)" },
                 ].map((c) => (
                   <div key={c.name} className="flex items-center justify-between gap-3">
