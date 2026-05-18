@@ -6,6 +6,7 @@ import TJChat from "@/components/TJChat";
 import WelcomeOverlay from "@/components/WelcomeOverlay";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import Providers from "./providers";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -47,10 +48,12 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
       <body className="min-h-screen flex flex-col">
-        <WelcomeOverlay />
-        <Navbar />
-        <main className="flex-1">{children}</main>
-        <TJChat />
+        <Providers>
+          <WelcomeOverlay />
+          <Navbar />
+          <main className="flex-1">{children}</main>
+          <TJChat />
+        </Providers>
         <Analytics />
         <SpeedInsights />
       </body>
