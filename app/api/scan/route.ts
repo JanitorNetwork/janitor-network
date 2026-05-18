@@ -18,19 +18,23 @@ function safeErr(e: unknown): string {
   return e instanceof Error ? e.message : String(e);
 }
 
-// ── EVM chain config — Etherscan / Basescan (uses API keys from env) ──────────
+// ── EVM chain config — Etherscan V2 (single endpoint, chainid selects network) ─
+// V1 (api.etherscan.io/api, api.basescan.org/api) is deprecated as of 2025.
+// V2 uses one key for all chains: https://docs.etherscan.io/v2-migration
 const EVM_CHAIN = {
   ethereum: {
-    api:    "https://api.etherscan.io/api",
-    apiV2:  "https://eth.blockscout.com/api/v2",  // Blockscout V2 for rich token metadata
-    label:  "Ethereum",
-    key:    () => process.env.ETHERSCAN_API_KEY ?? "",
+    api:     "https://api.etherscan.io/v2/api",
+    chainId: "1",
+    apiV2:   "https://eth.blockscout.com/api/v2",  // Blockscout V2 for rich token metadata
+    label:   "Ethereum",
+    key:     () => process.env.ETHERSCAN_API_KEY ?? "",
   },
   base: {
-    api:    "https://api.basescan.org/api",
-    apiV2:  "https://base.blockscout.com/api/v2", // Blockscout V2 for rich token metadata
-    label:  "Base",
-    key:    () => process.env.BASESCAN_API_KEY ?? "",
+    api:     "https://api.etherscan.io/v2/api",
+    chainId: "8453",
+    apiV2:   "https://base.blockscout.com/api/v2", // Blockscout V2 for rich token metadata
+    label:   "Base",
+    key:     () => process.env.ETHERSCAN_API_KEY ?? "",
   },
 } as const;
 
@@ -178,10 +182,11 @@ async function enhancedTxs(address: string, limit = 100): Promise<EnhancedTx[]> 
   return res.json() as Promise<EnhancedTx[]>;
 }
 
-// ── Etherscan / Basescan ──────────────────────────────────────────────────────
+// ── Etherscan V2 ─────────────────────────────────────────────────────────────
 async function evmFetch(chain: "ethereum" | "base", params: Record<string, string>): Promise<Record<string, unknown>> {
   const cfg = EVM_CHAIN[chain];
   const url = new URL(cfg.api);
+  url.searchParams.set("chainid", cfg.chainId);
   Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
   const apiKey = cfg.key();
   if (apiKey) url.searchParams.set("apikey", apiKey);
