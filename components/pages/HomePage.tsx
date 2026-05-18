@@ -273,23 +273,153 @@ export default function HomePage() {
 
       {/* ── ANNOUNCEMENTS ── */}
       <section className="py-20 px-6" style={{ background: "linear-gradient(180deg, #060606 0%, #0a0a0a 100%)" }}>
-        <div className="max-w-4xl mx-auto space-y-6">
+        <div className="max-w-5xl mx-auto space-y-6">
+
+          {/* ── $CLEAN LAUNCH — HERO CARD ── */}
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="relative rounded-2xl overflow-hidden"
+            style={{
+              background: "rgba(6,6,6,0.98)",
+              border: "1px solid rgba(57,255,20,0.4)",
+              boxShadow: "0 0 80px rgba(57,255,20,0.12), 0 0 0 1px rgba(57,255,20,0.08) inset",
+            }}
+          >
+            {/* Top glow line */}
+            <div className="h-[2px] w-full" style={{ background: "linear-gradient(to right, transparent, rgba(57,255,20,0.9) 30%, rgba(57,255,20,0.9) 70%, transparent)" }} />
+
+            <div className="px-8 py-10 sm:px-12 sm:py-14">
+              <div className="flex flex-col lg:flex-row gap-10 lg:gap-16 items-center">
+
+                {/* Left: text + countdown */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-3 mb-6">
+                    <span className="w-2.5 h-2.5 rounded-full animate-pulse-green flex-shrink-0" style={{ background: "var(--green)" }} />
+                    <span className="text-[10px] font-bold tracking-[0.4em] uppercase font-mono-jn" style={{ color: "var(--green)" }}>
+                      Official Announcement
+                    </span>
+                    <span
+                      className="font-mono-jn font-black text-[9px] px-2 py-0.5 rounded"
+                      style={{ background: "rgba(57,255,20,0.1)", color: "var(--green)", border: "1px solid rgba(57,255,20,0.3)" }}
+                    >
+                      PHASE 2
+                    </span>
+                  </div>
+
+                  <h2
+                    className="font-black leading-[0.9] tracking-tight mb-5"
+                    style={{ fontSize: "clamp(2.4rem, 5vw, 4rem)", color: "var(--text-cream)" }}
+                  >
+                    $CLEAN is launching
+                    <br />
+                    <span style={{ color: "var(--green)", textShadow: "0 0 60px rgba(57,255,20,0.4)" }}>
+                      May 25.
+                    </span>
+                  </h2>
+
+                  <p className="leading-relaxed mb-3 max-w-xl" style={{ color: "var(--text-muted)", fontSize: "1.05rem" }}>
+                    Fair launch on Solana. No pre-sale, no VC, no insider allocation.
+                    Initial liquidity locked. Going live at{" "}
+                    <strong style={{ color: "var(--text-silver)" }}>10:00 AM MDT</strong>.
+                  </p>
+                  <p className="leading-relaxed mb-8 max-w-xl" style={{ color: "var(--text-faint)", fontSize: "0.9rem" }}>
+                    Set your alarm. The night shift doesn&apos;t wait.
+                  </p>
+
+                  {/* Countdown */}
+                  <div className="rounded-xl mb-8 py-6 px-5"
+                    style={{ background: "rgba(57,255,20,0.05)", border: "1px solid rgba(57,255,20,0.15)" }}>
+                    <LaunchCountdown />
+                  </div>
+
+                  {/* Token facts row */}
+                  <div className="grid grid-cols-3 gap-3 mb-8">
+                    {[
+                      { label: "Pre-sale", value: "None" },
+                      { label: "VC Allocation", value: "Zero" },
+                      { label: "Liquidity", value: "Locked" },
+                    ].map(({ label, value }) => (
+                      <div key={label} className="rounded-lg p-3 text-center"
+                        style={{ background: "rgba(57,255,20,0.03)", border: "1px solid rgba(57,255,20,0.1)" }}>
+                        <div className="text-xs font-black font-mono-jn mb-0.5" style={{ color: "var(--green)" }}>
+                          {value}
+                        </div>
+                        <div className="text-[10px] uppercase tracking-widest font-mono-jn" style={{ color: "var(--text-faint)" }}>
+                          {label}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="flex flex-wrap gap-3">
+                    <Link href="/clean" className="btn-primary">
+                      $CLEAN Details <ArrowRight size={14} />
+                    </Link>
+                    <a href="https://t.me/TheJanitorHQ" target="_blank" rel="noopener noreferrer" className="btn-ghost">
+                      Get Notified <ExternalLink size={14} />
+                    </a>
+                  </div>
+                </div>
+
+                {/* Right: coin */}
+                <div className="flex-shrink-0 flex flex-col items-center gap-5">
+                  <div className="relative">
+                    <div
+                      className="absolute inset-0 rounded-full blur-2xl scale-110"
+                      style={{ background: "radial-gradient(circle, rgba(57,255,20,0.35) 0%, transparent 70%)" }}
+                    />
+                    <div
+                      className="relative rounded-full overflow-hidden"
+                      style={{
+                        width: 220,
+                        height: 220,
+                        border: "2px solid rgba(57,255,20,0.4)",
+                        boxShadow: "0 0 60px rgba(57,255,20,0.25), 0 0 120px rgba(57,255,20,0.1)",
+                      }}
+                    >
+                      <Image
+                        src="/mascot/clean-coin.jpeg"
+                        alt="$CLEAN Token"
+                        fill
+                        className="object-cover object-center"
+                      />
+                    </div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-black font-mono-jn" style={{ color: "var(--green)", letterSpacing: "0.05em" }}>
+                      $CLEAN
+                    </div>
+                    <div className="text-[10px] tracking-[0.3em] uppercase font-mono-jn mt-0.5" style={{ color: "var(--text-faint)" }}>
+                      Solana · Fair Launch
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            {/* Bottom glow line */}
+            <div className="h-px w-full" style={{ background: "linear-gradient(to right, transparent, rgba(57,255,20,0.3), transparent)" }} />
+          </motion.div>
 
           {/* ── Trash Scanner is LIVE ── */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
+            transition={{ duration: 0.5, delay: 0.15 }}
             className="relative rounded-2xl overflow-hidden"
             style={{
               background: "rgba(8,8,8,0.95)",
-              border: "1px solid rgba(57,255,20,0.3)",
-              boxShadow: "0 0 50px rgba(57,255,20,0.07)",
+              border: "1px solid rgba(57,255,20,0.2)",
+              boxShadow: "0 0 30px rgba(57,255,20,0.04)",
             }}
           >
-            <div className="h-px w-full" style={{ background: "linear-gradient(to right, transparent, rgba(57,255,20,0.7), transparent)" }} />
-            <div className="px-8 py-8 sm:px-10 sm:py-10">
+            <div className="h-px w-full" style={{ background: "linear-gradient(to right, transparent, rgba(57,255,20,0.5), transparent)" }} />
+            <div className="px-8 py-8 sm:px-10 sm:py-9">
               <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-8">
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-3">
@@ -303,15 +433,14 @@ export default function HomePage() {
                     </span>
                   </div>
                   <h2 className="font-black leading-tight tracking-tight mb-3"
-                    style={{ fontSize: "clamp(1.5rem, 3vw, 2.2rem)", color: "var(--text-cream)" }}>
+                    style={{ fontSize: "clamp(1.4rem, 3vw, 2rem)", color: "var(--text-cream)" }}>
                     Trash Scanner is active.
                   </h2>
-                  <p className="leading-relaxed max-w-xl" style={{ color: "var(--text-muted)", fontSize: "0.97rem" }}>
-                    Paste any Solana, Ethereum, or Base address and get a live risk score in
-                    seconds. Six on-chain signals — holder concentration, deployer history,
-                    liquidity security, volume behavior, address format, and{" "}
-                    <strong style={{ color: "var(--text-silver)" }}>honeypot detection</strong> powered
-                    by GoPlus Security. No fake data. TJ tells you what he sees.
+                  <p className="leading-relaxed max-w-xl" style={{ color: "var(--text-muted)", fontSize: "0.95rem" }}>
+                    Paste any Solana, Ethereum, or Base address — get a live risk score in seconds.
+                    Six on-chain signals including{" "}
+                    <strong style={{ color: "var(--text-silver)" }}>honeypot detection</strong> powered by GoPlus Security.
+                    No fake data. TJ tells you what he sees.
                   </p>
                 </div>
                 <div className="flex-shrink-0">
@@ -321,56 +450,7 @@ export default function HomePage() {
                 </div>
               </div>
             </div>
-            <div className="h-px w-full" style={{ background: "linear-gradient(to right, transparent, rgba(57,255,20,0.15), transparent)" }} />
-          </motion.div>
-
-          {/* ── $CLEAN launch countdown ── */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6, delay: 0.1 }}
-            className="relative rounded-2xl overflow-hidden"
-            style={{
-              background: "rgba(8,8,8,0.9)",
-              border: "1px solid rgba(57,255,20,0.18)",
-              boxShadow: "0 0 40px rgba(57,255,20,0.04)",
-            }}
-          >
-            <div className="h-px w-full" style={{ background: "linear-gradient(to right, transparent, rgba(57,255,20,0.45), transparent)" }} />
-            <div className="px-8 py-10 sm:px-12 sm:py-12">
-              <div className="flex items-center gap-3 mb-5">
-                <span className="w-2 h-2 rounded-full animate-pulse-green flex-shrink-0" style={{ background: "var(--green)" }} />
-                <span className="text-[10px] font-bold tracking-[0.35em] uppercase font-mono-jn" style={{ color: "var(--green)" }}>
-                  Official Announcement
-                </span>
-              </div>
-              <h2
-                className="font-black leading-tight tracking-tight mb-4"
-                style={{ fontSize: "clamp(1.8rem, 4vw, 2.8rem)", color: "var(--text-cream)" }}
-              >
-                $CLEAN is launching on{" "}
-                <span style={{ color: "var(--green)" }}>May 25</span>.
-              </h2>
-              <p className="leading-relaxed mb-8 max-w-2xl" style={{ color: "var(--text-muted)", fontSize: "1rem" }}>
-                Fair launch on Solana — no pre-sale, no VC, no insider allocation. Initial liquidity
-                locked. The utility token of The Janitor Network goes live at 10:00 AM MDT. Set your
-                alarm. Don&apos;t miss the night shift.
-              </p>
-              <div className="py-8 px-6 rounded-xl mb-8"
-                style={{ background: "rgba(57,255,20,0.04)", border: "1px solid rgba(57,255,20,0.1)" }}>
-                <LaunchCountdown />
-              </div>
-              <div className="flex flex-wrap gap-3">
-                <Link href="/clean" className="btn-primary text-sm">
-                  $CLEAN Details <ArrowRight size={14} />
-                </Link>
-                <a href="https://t.me/TheJanitorHQ" target="_blank" rel="noopener noreferrer" className="btn-ghost text-sm">
-                  Get Notified on Telegram <ExternalLink size={14} />
-                </a>
-              </div>
-            </div>
-            <div className="h-px w-full" style={{ background: "linear-gradient(to right, transparent, rgba(57,255,20,0.2), transparent)" }} />
+            <div className="h-px w-full" style={{ background: "linear-gradient(to right, transparent, rgba(57,255,20,0.1), transparent)" }} />
           </motion.div>
 
         </div>
