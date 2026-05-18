@@ -12,10 +12,10 @@ const PHASES = [
     eta: "Live Now",
     items: [
       "Trash Scanner live — Solana, Ethereum & Base with real on-chain data",
-      "TJ AI assistant — Claude-powered, in character 24/7",
-      "Live risk scores: holder concentration, deployer history, volume patterns",
-      "Community chat with TJ moderation, platform pages, and gallery",
-      "Comics, gallery, roadmap, and full site published",
+      "6 live risk signals: holder concentration, deployer history, liquidity security, volume patterns, honeypot detection (GoPlus), and address format",
+      "GoPlus Security integration — sell-block and tax-trap honeypot detection across all chains",
+      "TJ AI assistant — Claude-powered, in character 24/7 with post-scan assessment",
+      "Community chat with TJ moderation, comics, gallery, roadmap, and full site live",
     ],
   },
   {
