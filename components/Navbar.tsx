@@ -205,7 +205,7 @@ export default function Navbar() {
           {/* Desktop right side */}
           <div className="hidden lg:flex items-center gap-2 flex-shrink-0 ml-auto">
             <div className="flex items-center gap-0.5">
-              {SOCIAL.filter(s => !s.mobileOnly).map((s) => (
+              {SOCIAL.map((s) => (
                 <a
                   key={s.label}
                   href={s.href}
