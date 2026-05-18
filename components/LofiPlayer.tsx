@@ -1,63 +1,77 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Music, Play, Pause, SkipForward, Volume2, VolumeX } from "lucide-react";
 
 const STATIONS = [
-  { name: "Lo-fi Plaza",    vibe: "Beats to study & relax",  url: "https://radio.plaza.one/ogg" },
-  { name: "Chillhop Radio", vibe: "Relaxed grooves 24/7",    url: "https://streams.ilovemusic.de/iloveradio17.mp3" },
-  { name: "Lo-fi Hip Hop",  vibe: "Smooth ambient tones",    url: "https://stream.laut.fm/lofi" },
+  { name: "Groove Salad", vibe: "Ambient / chill electronica",  url: "https://ice2.somafm.com/groovesalad-128-mp3" },
+  { name: "Lush",         vibe: "Sensual electronic / ambient", url: "https://ice4.somafm.com/lush-128-mp3"         },
+  { name: "Drone Zone",   vibe: "Deep ambient space music",     url: "https://ice4.somafm.com/dronezone-128-mp3"   },
 ];
 
 type PS = "idle" | "loading" | "playing" | "error";
 
+// Module-level singleton — created once on first click, survives re-renders and Strict Mode
+let _el: HTMLAudioElement | null = null;
+
+function getEl(): HTMLAudioElement {
+  if (!_el) {
+    _el = new Audio();
+    _el.volume = 0.28;
+  }
+  return _el;
+}
+
 export default function LofiPlayer() {
-  const [ps, setPs]     = useState<PS>("idle");
+  const [ps, setPs]       = useState<PS>("idle");
   const [muted, setMuted] = useState(false);
   const [idx, setIdx]     = useState(0);
-  const elRef  = useRef<HTMLAudioElement | null>(null);
-  const idxRef = useRef(0);
-  idxRef.current = idx;
 
+  // Attach event listeners — safe to add/remove on Strict Mode double-fire
   useEffect(() => {
-    const el = document.createElement("audio");
-    el.volume = 0.28;
+    const el = getEl();
 
-    el.addEventListener("playing", () => setPs("playing"));
-    el.addEventListener("waiting", () => setPs("loading"));
-    el.addEventListener("error",   () => setPs("error"));
-
-    // Use a microtask so an immediately-following play() overrides "idle"
-    el.addEventListener("pause", () => {
+    const onPlaying = () => setPs("playing");
+    const onWaiting = () => setPs("loading");
+    const onError = () => setPs("error");
+    const onPause   = () => {
+      // Microtask lets an immediately-following play() override "idle"
       Promise.resolve().then(() => {
-        if (elRef.current === el && el.paused) setPs("idle");
+        if (_el?.paused) setPs("idle");
       });
-    });
+    };
 
-    elRef.current = el;
+    el.addEventListener("playing", onPlaying);
+    el.addEventListener("waiting", onWaiting);
+    el.addEventListener("error",   onError);
+    el.addEventListener("pause",   onPause);
+
+    // Sync UI if audio was already playing (e.g. navigated away and back)
+    if (!el.paused) setPs("playing");
+
     return () => {
-      el.pause();
-      el.src = "";
-      elRef.current = null;
+      el.removeEventListener("playing", onPlaying);
+      el.removeEventListener("waiting", onWaiting);
+      el.removeEventListener("error",   onError);
+      el.removeEventListener("pause",   onPause);
     };
   }, []);
 
   useEffect(() => {
-    const el = elRef.current;
-    if (el) el.muted = muted;
+    if (_el) _el.muted = muted;
   }, [muted]);
 
   const startStation = (stationIndex: number) => {
-    const el = elRef.current;
-    if (!el) return;
+    const el = getEl();
     el.src = STATIONS[stationIndex].url;
     setPs("loading");
-    el.play().catch(() => setPs("error"));
+    el.play().catch((err: Error) => {
+      if (err.name !== "AbortError") setPs("error");
+    });
   };
 
   const toggle = () => {
-    const el = elRef.current;
-    if (!el) return;
+    const el = getEl();
     if (ps === "playing" || ps === "loading") {
       el.pause();
     } else {
@@ -66,16 +80,15 @@ export default function LofiPlayer() {
   };
 
   const next = () => {
-    const newIdx = (idxRef.current + 1) % STATIONS.length;
+    const newIdx = (idx + 1) % STATIONS.length;
     setIdx(newIdx);
     if (ps === "playing" || ps === "loading") {
-      const el = elRef.current;
-      if (el) { el.pause(); }
+      getEl().pause();
       startStation(newIdx);
     }
   };
 
-  const st = STATIONS[idx];
+  const st      = STATIONS[idx];
   const playing = ps === "playing";
   const loading = ps === "loading";
   const error   = ps === "error";
@@ -108,7 +121,10 @@ export default function LofiPlayer() {
         </div>
         <div className="flex items-center gap-1.5 mt-0.5">
           {playing && (
-            <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 animate-pulse-green" style={{ background: "var(--green)" }} />
+            <span
+              className="w-1.5 h-1.5 rounded-full flex-shrink-0 animate-pulse-green"
+              style={{ background: "var(--green)" }}
+            />
           )}
           <span className="text-[9px] leading-none truncate" style={{ color: "var(--text-faint)" }}>
             {playing ? st.vibe : error ? "Try next →" : "Click play for ambient music"}

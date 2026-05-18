@@ -63,12 +63,15 @@ function Colon() {
 }
 
 export default function LaunchCountdown() {
-  const [time, setTime] = useState<TimeLeft>(calc);
+  const [time, setTime] = useState<TimeLeft | null>(null);
 
   useEffect(() => {
+    setTime(calc());
     const id = setInterval(() => setTime(calc()), 1000);
     return () => clearInterval(id);
   }, []);
+
+  if (!time) return <div style={{ minHeight: 96 }} />;
 
   if (time.launched) {
     return (

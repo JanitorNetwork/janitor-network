@@ -3,22 +3,28 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X, ArrowRight } from "lucide-react";
+import { Menu, X, ArrowRight, ChevronDown } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import JanitorLogo from "@/components/JanitorLogo";
 
-// desktopHide: true → link appears in mobile drawer only, not the desktop bar
-const NAV_LINKS: { href: string; label: string; hot?: boolean; desktopHide?: boolean }[] = [
-  { href: "/",               label: "Home" },
-  { href: "/scan",           label: "Trash Scanner" },
-  { href: "/clean",          label: "$CLEAN" },
-  { href: "/announcements",  label: "Announcements", hot: true },
-  { href: "/roadmap",        label: "Roadmap" },
-  { href: "/community",      label: "Community" },
-  { href: "/about",          label: "About" },
-  { href: "/gallery",        label: "Gallery",  desktopHide: true },
-  { href: "/comics",         label: "Comics",   desktopHide: true },
+// Primary links — shown on both desktop and mobile
+const PRIMARY_LINKS = [
+  { href: "/",          label: "Home" },
+  { href: "/scan",      label: "Trash Scanner" },
+  { href: "/clean",     label: "$CLEAN" },
+  { href: "/roadmap",   label: "Roadmap" },
+  { href: "/community", label: "Community" },
+  { href: "/about",     label: "About" },
 ];
+
+// More dropdown — desktop hover flyout + mobile drawer
+const MORE_LINKS = [
+  { href: "/gallery",       label: "Gallery" },
+  { href: "/comics",        label: "Comics" },
+  { href: "/announcements", label: "Announcements" },
+];
+
+const ALL_MOBILE_LINKS = [...PRIMARY_LINKS, ...MORE_LINKS];
 
 const SOCIAL = [
   {
@@ -71,17 +77,17 @@ export default function Navbar() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // Lock body scroll while drawer is open
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };
   }, [open]);
 
-  // Close drawer on route change
   useEffect(() => { setOpen(false); }, [pathname]);
 
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
+
+  const moreActive = MORE_LINKS.some(l => isActive(l.href));
 
   return (
     <>
@@ -102,10 +108,10 @@ export default function Navbar() {
           style={{ background: "linear-gradient(90deg, transparent, rgba(57,255,20,0.5) 30%, rgba(57,255,20,0.5) 70%, transparent)" }}
         />
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-[68px] flex items-center gap-4 sm:gap-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-[68px] flex items-center gap-3">
 
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2.5 group flex-shrink-0 mr-2">
+          <Link href="/" className="flex items-center gap-2.5 group flex-shrink-0">
             <JanitorLogo size={34} glow />
             <div className="hidden sm:flex flex-col leading-none">
               <span
@@ -121,39 +127,85 @@ export default function Navbar() {
           </Link>
 
           {/* Separator */}
-          <div className="hidden lg:block w-px h-6 flex-shrink-0" style={{ background: "var(--border-mid)" }} />
+          <div className="hidden lg:block w-px h-6 flex-shrink-0 mx-1" style={{ background: "var(--border-mid)" }} />
 
-          {/* Desktop nav links — desktopHide items excluded */}
-          <div className="hidden lg:flex items-center flex-1 min-w-0">
-            {NAV_LINKS.filter(l => !l.desktopHide).map((link) => {
+          {/* Desktop nav — primary links + More dropdown */}
+          <div className="hidden lg:flex items-center gap-0.5 flex-1 min-w-0">
+
+            {PRIMARY_LINKS.map((link) => {
               const active = isActive(link.href);
               return (
                 <Link
                   key={link.href}
                   href={link.href}
-                  className="relative px-2 py-2 text-[11px] font-semibold tracking-[0.08em] uppercase transition-all duration-200 whitespace-nowrap flex-shrink-0 flex items-center gap-1.5"
+                  className="relative px-3 py-2 text-[11px] font-semibold tracking-[0.1em] uppercase transition-colors duration-200 whitespace-nowrap flex-shrink-0"
                   style={{ color: active ? "var(--green)" : "var(--text-silver)" }}
                   onMouseEnter={e => { if (!active) (e.currentTarget as HTMLElement).style.color = "var(--text-cream)"; }}
                   onMouseLeave={e => { if (!active) (e.currentTarget as HTMLElement).style.color = "var(--text-silver)"; }}
                 >
                   {link.label}
-                  {link.hot && !active && (
-                    <span className="w-1.5 h-1.5 rounded-full animate-pulse-green flex-shrink-0" style={{ background: "var(--green)" }} />
-                  )}
                   {active && (
                     <span
-                      className="absolute bottom-0 left-2 right-2 h-px"
+                      className="absolute bottom-0 left-3 right-3 h-px"
                       style={{ background: "var(--green)", boxShadow: "0 0 6px rgba(57,255,20,0.8)" }}
                     />
                   )}
                 </Link>
               );
             })}
+
+            {/* More ▾ dropdown */}
+            <div className="relative group flex-shrink-0">
+              <button
+                className="relative flex items-center gap-1 px-3 py-2 text-[11px] font-semibold tracking-[0.1em] uppercase transition-colors duration-200"
+                style={{ color: moreActive ? "var(--green)" : "var(--text-silver)" }}
+              >
+                More
+                <ChevronDown size={10} className="transition-transform duration-200 group-hover:rotate-180" />
+                {moreActive && (
+                  <span
+                    className="absolute bottom-0 left-3 right-3 h-px"
+                    style={{ background: "var(--green)", boxShadow: "0 0 6px rgba(57,255,20,0.8)" }}
+                  />
+                )}
+              </button>
+
+              {/* Flyout */}
+              <div className="absolute top-full left-0 pt-1 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150">
+                <div
+                  className="py-1 rounded-lg overflow-hidden"
+                  style={{
+                    background: "#0c0c0c",
+                    border: "1px solid rgba(57,255,20,0.18)",
+                    boxShadow: "0 8px 32px rgba(0,0,0,0.6)",
+                    minWidth: 150,
+                  }}
+                >
+                  {MORE_LINKS.map((link) => {
+                    const active = isActive(link.href);
+                    return (
+                      <Link
+                        key={link.href}
+                        href={link.href}
+                        className="flex items-center gap-2 px-4 py-2.5 text-[11px] font-semibold tracking-[0.1em] uppercase transition-colors duration-150"
+                        style={{ color: active ? "var(--green)" : "var(--text-silver)" }}
+                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = "var(--text-cream)"; (e.currentTarget as HTMLElement).style.background = "rgba(57,255,20,0.04)"; }}
+                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = active ? "var(--green)" : "var(--text-silver)"; (e.currentTarget as HTMLElement).style.background = "transparent"; }}
+                      >
+                        {link.label}
+                        {active && <span className="w-1.5 h-1.5 rounded-full flex-shrink-0 ml-auto" style={{ background: "var(--green)" }} />}
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
           </div>
 
           {/* Desktop right side */}
-          <div className="hidden lg:flex items-center gap-2.5 flex-shrink-0 ml-auto">
-            <div className="flex items-center gap-1">
+          <div className="hidden lg:flex items-center gap-2 flex-shrink-0 ml-auto">
+            <div className="flex items-center gap-0.5">
               {SOCIAL.filter(s => !s.mobileOnly).map((s) => (
                 <a
                   key={s.label}
@@ -216,7 +268,6 @@ export default function Navbar() {
       <AnimatePresence>
         {open && (
           <>
-            {/* Backdrop */}
             <motion.div
               key="nav-backdrop"
               initial={{ opacity: 0 }}
@@ -229,7 +280,6 @@ export default function Navbar() {
               aria-hidden="true"
             />
 
-            {/* Drawer */}
             <motion.div
               key="nav-drawer"
               initial={{ x: "100%" }}
@@ -272,10 +322,11 @@ export default function Navbar() {
                 </button>
               </div>
 
-              {/* Nav links */}
+              {/* All links */}
               <nav className="flex-1 overflow-y-auto py-3">
-                {NAV_LINKS.map((link, i) => {
+                {ALL_MOBILE_LINKS.map((link, i) => {
                   const active = isActive(link.href);
+                  const isMoreItem = MORE_LINKS.some(m => m.href === link.href);
                   return (
                     <motion.div
                       key={link.href}
@@ -283,21 +334,22 @@ export default function Navbar() {
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: i * 0.035 + 0.06 }}
                     >
+                      {/* Section divider before More items */}
+                      {isMoreItem && i === PRIMARY_LINKS.length && (
+                        <div className="mx-5 my-2 border-t border-[var(--border-faint)]" />
+                      )}
                       <Link
                         href={link.href}
                         onClick={() => setOpen(false)}
                         className="flex items-center gap-3 px-5 py-3.5 border-l-2 transition-all duration-150"
                         style={{
                           borderColor: active ? "var(--green)" : "transparent",
-                          color: active ? "var(--green)" : "var(--text-silver)",
+                          color: active ? "var(--green)" : isMoreItem ? "var(--text-faint)" : "var(--text-silver)",
                           background: active ? "rgba(57,255,20,0.04)" : "transparent",
                         }}
                       >
-                        <span className="flex-1 text-xs font-semibold tracking-[0.15em] uppercase flex items-center gap-2">
+                        <span className="flex-1 text-xs font-semibold tracking-[0.15em] uppercase">
                           {link.label}
-                          {link.hot && !active && (
-                            <span className="w-1.5 h-1.5 rounded-full animate-pulse-green flex-shrink-0" style={{ background: "var(--green)" }} />
-                          )}
                         </span>
                         {active && <ArrowRight size={12} style={{ color: "var(--green)" }} />}
                       </Link>
@@ -311,7 +363,6 @@ export default function Navbar() {
                 className="px-5 py-5 flex-shrink-0"
                 style={{ borderTop: "1px solid var(--border-faint)", background: "rgba(0,0,0,0.25)" }}
               >
-                {/* Social + phase badge */}
                 <div className="flex items-center gap-2 mb-4">
                   {SOCIAL.map((s) => (
                     <a
@@ -340,8 +391,6 @@ export default function Navbar() {
                     </span>
                   </div>
                 </div>
-
-                {/* CTA */}
                 <Link
                   href="/scan"
                   onClick={() => setOpen(false)}

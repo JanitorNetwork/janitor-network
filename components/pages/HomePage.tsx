@@ -16,6 +16,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import JanitorLogo from "@/components/JanitorLogo";
+import LaunchCountdown from "@/components/LaunchCountdown";
 
 const MARQUEE_ITEMS = [
   "NIGHT SHIFT IN PROGRESS",
@@ -269,6 +270,77 @@ export default function HomePage() {
           ))}
         </div>
       </div>
+
+      {/* ── ANNOUNCEMENTS ── */}
+      <section className="py-20 px-6" style={{ background: "linear-gradient(180deg, #060606 0%, #0a0a0a 100%)" }}>
+        <div className="max-w-4xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+            className="relative rounded-2xl overflow-hidden"
+            style={{
+              background: "rgba(8,8,8,0.9)",
+              border: "1px solid rgba(57,255,20,0.25)",
+              boxShadow: "0 0 60px rgba(57,255,20,0.06), inset 0 0 60px rgba(57,255,20,0.02)",
+            }}
+          >
+            {/* Top accent bar */}
+            <div className="h-px w-full" style={{ background: "linear-gradient(to right, transparent, rgba(57,255,20,0.6), transparent)" }} />
+
+            <div className="px-8 py-10 sm:px-12 sm:py-14">
+              {/* Label */}
+              <div className="flex items-center gap-3 mb-6">
+                <span className="w-2 h-2 rounded-full animate-pulse-green flex-shrink-0" style={{ background: "var(--green)" }} />
+                <span className="text-[10px] font-bold tracking-[0.35em] uppercase font-mono-jn" style={{ color: "var(--green)" }}>
+                  Official Announcement
+                </span>
+              </div>
+
+              {/* Headline */}
+              <h2
+                className="font-black leading-tight tracking-tight mb-4"
+                style={{ fontSize: "clamp(1.8rem, 4vw, 3rem)", color: "var(--text-cream)" }}
+              >
+                $CLEAN is launching on{" "}
+                <span style={{ color: "var(--green)" }}>May 25</span>.
+              </h2>
+              <p className="leading-relaxed mb-10 max-w-2xl" style={{ color: "var(--text-muted)", fontSize: "1.05rem" }}>
+                Fair launch on Solana — no pre-sale, no VC, no insider allocation. Initial liquidity
+                locked. The utility token of The Janitor Network goes live at 10:00 AM MDT. Set your
+                alarm. Don&apos;t miss the night shift.
+              </p>
+
+              {/* Countdown */}
+              <div
+                className="py-8 px-6 rounded-xl mb-10"
+                style={{ background: "rgba(57,255,20,0.04)", border: "1px solid rgba(57,255,20,0.1)" }}
+              >
+                <LaunchCountdown />
+              </div>
+
+              {/* CTAs */}
+              <div className="flex flex-wrap gap-3">
+                <Link href="/clean" className="btn-primary text-sm">
+                  $CLEAN Details <ArrowRight size={14} />
+                </Link>
+                <a
+                  href="https://t.me/TheJanitorHQ"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn-ghost text-sm"
+                >
+                  Get Notified on Telegram <ExternalLink size={14} />
+                </a>
+              </div>
+            </div>
+
+            {/* Bottom accent bar */}
+            <div className="h-px w-full" style={{ background: "linear-gradient(to right, transparent, rgba(57,255,20,0.3), transparent)" }} />
+          </motion.div>
+        </div>
+      </section>
 
       {/* ── THE PROBLEM ── */}
       <section className="py-28 px-6" style={{ background: "linear-gradient(180deg, #0a0a0a 0%, #0f0f0f 100%)" }}>
