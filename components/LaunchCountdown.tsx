@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 
-// May 18, 2026 at 10:00:00 GMT-0600 (Mountain Daylight Time)
-const LAUNCH_TARGET = new Date("2026-05-18T16:00:00.000Z").getTime();
+// May 25, 2026 at 10:00:00 GMT-0600 (Mountain Daylight Time)
+const LAUNCH_TARGET = new Date("2026-05-25T16:00:00.000Z").getTime();
 
 interface TimeLeft {
   days: number;
@@ -105,7 +105,7 @@ export default function LaunchCountdown() {
         <Digit value={time.seconds} label="sec"  />
       </div>
       <div className="text-[10px] font-mono-jn" style={{ color: "var(--text-faint)" }}>
-        May 18, 2026 · 10:00 AM MDT
+        May 25, 2026 · 10:00 AM MDT
       </div>
     </div>
   );
